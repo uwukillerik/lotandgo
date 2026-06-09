@@ -1,0 +1,26 @@
+@startuml lotgo-sequence-bid
+autonumber
+title Lot&Go — диаграмма последовательности: ставка
+
+actor "Покупатель" as User
+participant "React SPA" as UI
+participant "POST /api/auctions/:id/bids" as API
+database "PostgreSQL" as DB
+participant "notificationService" as Notif
+participant "Socket.io" as WS
+
+User -> UI : ввод суммы
+UI -> API : POST { amount } + JWT
+
+alt ставка ниже минимума
+  API --> UI : 400
+else успех
+  API -> DB : INSERT bid, UPDATE currentPrice
+  API -> Notif : уведомить перебитого
+  Notif -> DB : INSERT notification
+  API -> WS : bid:placed
+  WS -> UI : новая цена
+  API --> UI : 200
+end
+
+@enduml

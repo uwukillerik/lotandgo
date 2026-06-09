@@ -1,0 +1,27 @@
+@startuml lotgo-sequence-promotion
+autonumber
+title Lot&Go — диаграмма последовательности: продвижение лота
+
+actor "Продавец" as Seller
+participant "/profile/promote" as UI
+participant "POST /api/lots/:id/promote" as API
+participant "promotion-service" as Promo
+participant "wallet-service" as Wallet
+database "PostgreSQL" as DB
+
+Seller -> UI : выбор лота и тарифа
+UI -> API : POST { tier }
+
+API -> Promo : purchasePromotion()
+
+alt недостаточно средств
+  Promo --> API : ошибка
+  API --> UI : 400
+else успех
+  Promo -> Wallet : debit
+  Wallet -> DB : wallet + transaction
+  Promo -> DB : INSERT lot_promotions
+  API --> UI : 200
+end
+
+@enduml

@@ -1,0 +1,44 @@
+@startuml lotgo-activity-register
+title Lot&Go — диаграмма деятельности: регистрация
+
+|Гость|
+start
+:Открыть страницу /auth;
+:Заполнить имя, email, пароль;
+
+if (Режим?) then (Регистрация)
+  if (Приняты оферта и политика?) then (нет)
+    :Показать ошибку;
+    stop
+  else (да)
+    |Система|
+    :POST /api/auth/register;
+    if (Email занят?) then (да)
+      |Гость|
+      :Сообщение «Email уже используется»;
+      stop
+    else (нет)
+      :Создать пользователя и кошелёк;
+      :Сохранить termsAcceptedAt,\nprivacyAcceptedAt;
+      :Выдать JWT (cookie);
+      |Гость|
+      :Перенаправление в каталог;
+      stop
+    endif
+  endif
+else (Вход)
+  |Система|
+  :POST /api/auth/login;
+  if (Неверные данные?) then (да)
+    |Гость|
+    :Сообщение об ошибке;
+    stop
+  else (нет)
+    :Выдать JWT (cookie);
+    |Гость|
+    :Перенаправление в профиль / каталог;
+    stop
+  endif
+endif
+
+@enduml

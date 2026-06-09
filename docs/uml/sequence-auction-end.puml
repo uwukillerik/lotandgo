@@ -1,0 +1,26 @@
+@startuml lotgo-sequence-auction-end
+autonumber
+title Lot&Go — диаграмма последовательности: завершение аукциона
+
+participant "auctionEngine" as Engine
+database "PostgreSQL" as DB
+participant "wallet-service" as Wallet
+participant "notificationService" as Notif
+participant "Socket.io" as WS
+
+Engine -> DB : SELECT active, endsAt <= now
+
+alt есть ставки
+  Engine -> DB : winnerId, status=ended
+  Engine -> Wallet : списание / зачисление
+  Wallet -> DB : wallet_transactions
+  Engine -> Notif : won + auction_end
+  Notif -> DB : notifications
+else ставок нет
+  Engine -> DB : status=ended
+  Engine -> Notif : auction_end (продавец)
+endif
+
+Engine -> WS : auction:ended
+
+@enduml

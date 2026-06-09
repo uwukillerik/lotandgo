@@ -1,0 +1,73 @@
+@startuml lotgo-use-case
+left to right direction
+skinparam packageStyle rectangle
+
+title Lot&Go — диаграмма прецедентов
+
+actor "Гость" as Guest
+actor "Покупатель" as Buyer
+actor "Продавец" as Seller
+actor "Администратор" as Admin
+
+Buyer -|> Guest
+Seller -|> Buyer
+
+rectangle "Публичная зона" {
+  usecase "Просмотр каталога" as UC1
+  usecase "Просмотр лота и аукциона" as UC2
+  usecase "Регистрация / вход" as UC3
+  usecase "Принятие оферты и политики" as UC4
+}
+
+rectangle "Торги и сделка" {
+  usecase "Размещение ставки" as UC5
+  usecase "Live-обновление цены" as UC6
+  usecase "Чат по аукциону" as UC7
+  usecase "Управление статусом сделки" as UC8
+  usecase "Получение уведомлений" as UC9
+}
+
+rectangle "Продавец" {
+  usecase "Создание лота с фото" as UC10
+  usecase "Продвижение лота" as UC11
+  usecase "Просмотр своих лотов" as UC12
+}
+
+rectangle "Финансы" {
+  usecase "Пополнение кошелька" as UC13
+  usecase "Вывод средств" as UC14
+}
+
+rectangle "Администрирование" {
+  usecase "Статистика платформы" as UC16
+  usecase "Управление пользователями" as UC17
+  usecase "Модерация лотов" as UC18
+  usecase "Управление аукционами" as UC19
+}
+
+Guest --> UC1
+Guest --> UC2
+Guest --> UC3
+
+Buyer --> UC5
+Buyer --> UC6
+Buyer --> UC7
+Buyer --> UC9
+Buyer --> UC13
+Buyer --> UC14
+
+Seller --> UC10
+Seller --> UC11
+Seller --> UC12
+Seller --> UC8
+
+UC3 ..> UC4 : <<include>>
+UC5 ..> UC6 : <<extend>>
+UC11 ..> UC13 : <<include>>
+
+Admin --> UC16
+Admin --> UC17
+Admin --> UC18
+Admin --> UC19
+
+@enduml

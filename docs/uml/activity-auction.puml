@@ -1,0 +1,54 @@
+@startuml lotgo-activity-auction
+title Lot&Go — диаграмма деятельности: жизненный цикл аукциона
+
+|Продавец|
+start
+:Создать лот (фото, описание, категория);
+:Задать стартовую цену, шаг, даты;
+
+|Система|
+:Сохранить лот (draft)\nи аукцион (scheduled);
+
+repeat
+  :auctionEngine: проверка по таймеру;
+repeat while (startsAt не наступило?) is (да)
+->нет;
+
+:Статус аукциона → active;
+:Статус лота → active;
+:Уведомление продавцу\n«Торги начались»;
+:WebSocket auction:started;
+
+|Покупатели|
+repeat
+  :Размещение ставок;
+  :Live-обновление цены;
+repeat while (endsAt не наступило\nи статус active?) is (да)
+->нет;
+
+|Система|
+if (Есть ставки?) then (да)
+  :Определить победителя (top bid);
+  :Статус → ended, winnerId;
+  :Списать сумму с кошелька победителя;
+  :Зачислить продавцу (минус комиссия);
+  :Уведомления: won, auction_end;
+else (нет)
+  :Статус → ended без победителя;
+  :Уведомление продавцу;
+endif
+
+:WebSocket auction:ended;
+
+|Продавец / Победитель|
+fork
+  |Победитель|
+  :Ожидание оплаты / доставки;
+fork again
+  |Продавец|
+  :Обновление статуса сделки\n(awaiting_payment → paid → shipped → completed);
+end fork
+
+stop
+
+@enduml

@@ -1,0 +1,24 @@
+@startuml lotgo-sequence-register
+autonumber
+title Lot&Go — диаграмма последовательности: регистрация
+
+actor "Гость" as Guest
+participant "Страница /auth" as UI
+participant "POST /api/auth/register" as API
+database "PostgreSQL" as DB
+
+Guest -> UI : форма + чекбоксы оферты/политики
+UI -> API : POST { name, email, password,\nacceptTerms, acceptPrivacy }
+
+alt документы не приняты
+  API --> UI : 400
+else email занят
+  API -> DB : SELECT users
+  API --> UI : 409
+else успех
+  API -> DB : INSERT users, wallets
+  API --> UI : 201 + Set-Cookie JWT
+  UI --> Guest : переход в каталог
+end
+
+@enduml
