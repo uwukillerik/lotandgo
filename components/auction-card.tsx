@@ -87,15 +87,22 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
             value={auction.currentPrice}
             amountClassName={cn(isPremium ? "text-lg sm:text-xl" : "text-base sm:text-lg")}
           />
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <div className="rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
+          <div className="mt-2 space-y-1.5">
+            <div className="w-fit rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
               <Countdown
                 endsAt={auction.endsAt}
                 className="text-[11px] font-semibold text-slate-600"
                 urgentClassName="text-[11px] font-bold text-rose-500"
               />
             </div>
-            <span className="text-[11px] text-slate-400">{auction.bidsCount} став.</span>
+            <p className="text-xs text-slate-500">
+              {auction.bidsCount}{" "}
+              {auction.bidsCount === 1
+                ? "ставка"
+                : auction.bidsCount >= 2 && auction.bidsCount <= 4
+                  ? "ставки"
+                  : "ставок"}
+            </p>
           </div>
         </div>
       </div>

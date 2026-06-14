@@ -349,9 +349,7 @@
   }
 
   .filter-modal-panel {
-    @apply relative flex w-full flex-col overflow-hidden rounded-t-[2rem] sm:max-w-lg sm:rounded-[2rem];
-    max-height: min(88dvh, calc(100dvh - 5.5rem - env(safe-area-inset-bottom, 0px)));
-    margin-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    @apply relative flex w-full max-h-[88dvh] flex-col overflow-hidden rounded-t-[2rem] sm:max-h-[92dvh] sm:max-w-lg sm:rounded-[2rem];
     background: linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.98) 0%,
@@ -363,16 +361,9 @@
       0 24px 60px -20px rgba(15, 23, 42, 0.35);
   }
 
-  @media (min-width: 640px) {
-    .filter-modal-panel {
-      max-height: 92dvh;
-      margin-bottom: 0;
-    }
-  }
-
   .filter-modal-footer {
     @apply flex shrink-0 gap-2.5 border-t border-amber-100/80 bg-white/95 px-5 py-4 backdrop-blur sm:px-6;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   }
 
   body.filter-modal-open .liquid-glass-dock-wrap {
