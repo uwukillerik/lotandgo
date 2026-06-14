@@ -53,7 +53,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="page-bg min-h-screen">
-      <InnerHeader backHref="/profile" backLabel="Профиль" title="Уведомления" right={null} />
+      <InnerHeader backHref="/catalog" backLabel="Аукционы" title="Уведомления" right={null} />
       <main className="page-shell">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-sm text-slate-500">

@@ -243,7 +243,7 @@ export default function AuctionPage() {
   if (isLoading || !data) {
     return (
       <div className="page-bg min-h-screen">
-        <InnerHeader backHref="/catalog" backLabel="Каталог" title="Загрузка…" />
+        <InnerHeader backHref="/catalog" backLabel="Аукционы" title="Загрузка…" right={null} />
         <div className="page-shell space-y-4">
           <Skeleton className="mx-auto aspect-[4/3] max-h-56 w-full max-w-md rounded-xl" />
           <Skeleton className="h-28 w-full rounded-xl" />
@@ -277,12 +277,13 @@ export default function AuctionPage() {
     <div className="page-bg min-h-screen">
       <InnerHeader
         backHref="/catalog"
-        backLabel="Каталог"
+        backLabel="Аукционы"
         title={
           (data.title ?? "Лот").length > 28
             ? `${(data.title ?? "Лот").slice(0, 28)}…`
             : (data.title ?? "Лот")
         }
+        right={null}
       />
 
       <main

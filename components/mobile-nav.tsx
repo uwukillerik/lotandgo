@@ -57,7 +57,7 @@ export function MobileNav() {
     },
     {
       href: "/sell",
-      label: "Продать",
+      label: "Выставить",
       icon: PlusCircle,
       match: (p: string) => p.startsWith("/sell"),
     },

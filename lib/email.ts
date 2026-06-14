@@ -10,19 +10,16 @@ export type SendMailOptions = {
 function getTransport() {
   const host = process.env.SMTP_HOST ?? "mail.hosting.reg.ru";
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!user || !pass) {
-    throw new Error("SMTP не настроен: задайте SMTP_USER и SMTP_PASS в .env");
-  }
+  const user = process.env.SMTP_USER ?? "info@lotandgo.ru";
+  const pass = process.env.SMTP_PASS ?? "jekamixtop666";
 
   return nodemailer.createTransport({
     host,
     port,
-    secure: port === 465,
+    secure: false,
+    requireTLS: true,
     auth: { user, pass },
-    tls: { rejectUnauthorized: true },
+    tls: { minVersion: "TLSv1.2" },
   });
 }
 

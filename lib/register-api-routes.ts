@@ -109,6 +109,7 @@ export function registerApiRoutes(app: Express) {
   api.get("/admin/auctions", wrapJson(adminAuctions.GET));
   api.post("/admin/auctions/:id/end", wrapJson(adminAuctionEnd.POST));
   api.get("/admin/payments", wrapJson(adminPayments.GET));
+  api.get("/admin/email/send", wrapJson(adminEmailSend.GET));
   api.post("/admin/email/send", wrapJson(adminEmailSend.POST));
   api.put("/admin/email/send", wrapJson(adminEmailSend.PUT));
 

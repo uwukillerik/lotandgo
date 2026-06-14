@@ -3,7 +3,7 @@
 import { useDeferredValue, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SlidersHorizontal, Flame } from "lucide-react";
-import { InnerHeader } from "@/components/site-header";
+import { InnerHeader, HeaderSellButton } from "@/components/site-header";
 import { CatalogFiltersPanel } from "@/components/catalog-filters";
 import { AuctionCard } from "@/components/auction-card";
 import { PromotedShowcase } from "@/components/promoted-showcase";
@@ -42,7 +42,12 @@ export default function CatalogPage() {
 
   return (
     <div className="page-bg min-h-screen">
-      <InnerHeader backHref="/" backLabel="Главная" title="Аукционы" />
+      <InnerHeader
+        backHref="/"
+        backLabel="Главная"
+        title="Аукционы"
+        right={<HeaderSellButton />}
+      />
 
       <main className="page-shell">
         <div className="catalog-hero mb-6">

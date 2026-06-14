@@ -34,6 +34,9 @@ async function start() {
       if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
         return next();
       }
+      if (path.extname(req.path)) {
+        return res.status(404).end();
+      }
       res.sendFile(path.join(dist, "index.html"));
     });
   }

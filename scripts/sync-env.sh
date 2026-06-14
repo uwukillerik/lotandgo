@@ -32,5 +32,17 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 done < "$DEFAULTS"
 
 echo "sync-env: добавлено ключей — $added"
+
+# SMTP всегда синхронизируем из production (чтобы почта работала без ручной настройки)
+for key in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_FROM; do
+  value=$(grep -m1 "^${key}=" "$DEFAULTS" | cut -d= -f2- || true)
+  [[ -z "$value" ]] && continue
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+  else
+    echo "${key}=${value}" >> "$ENV_FILE"
+  fi
+done
+echo "sync-env: SMTP ключи обновлены"
 chown lotgo:lotgo "$ENV_FILE" 2>/dev/null || true
 chmod 600 "$ENV_FILE" 2>/dev/null || true

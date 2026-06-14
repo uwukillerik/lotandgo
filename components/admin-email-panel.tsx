@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Loader2, Send } from "lucide-react";
 import { getAuthHeaders } from "@/components/auth-provider";
 import { AdminBtn, AdminCard, AdminSectionTitle } from "@/components/admin-ui";
@@ -9,6 +9,15 @@ import { toast } from "sonner";
 
 export function AdminEmailPanel() {
   const [to, setTo] = useState("jekamix6666@gmail.com");
+
+  const { data: smtp } = useQuery({
+    queryKey: ["admin-email-smtp"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/email/send", { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Не удалось загрузить настройки SMTP");
+      return res.json() as Promise<{ host: string; port: string; user: string }>;
+    },
+  });
 
   const sendTest = useMutation({
     mutationFn: async () => {
@@ -31,7 +40,9 @@ export function AdminEmailPanel() {
     <AdminCard className="space-y-4">
       <AdminSectionTitle>Почта Lot&Go</AdminSectionTitle>
       <p className="text-sm text-slate-500">
-        SMTP: mail.hosting.reg.ru:587 · info@lotandgo.ru (настройте SMTP_* в .env)
+        {smtp
+          ? `SMTP: ${smtp.host}:${smtp.port} · ${smtp.user}`
+          : "Загрузка настроек SMTP…"}
       </p>
       <label className="block text-sm">
         <span className="mb-1 block font-semibold text-slate-700">Кому</span>

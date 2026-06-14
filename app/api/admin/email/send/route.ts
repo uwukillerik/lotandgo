@@ -12,6 +12,18 @@ const schema = z.object({
   userName: z.string().optional(),
 });
 
+export async function GET(request: NextRequest) {
+  try {
+    await requireAdmin(request);
+    const user = process.env.SMTP_USER ?? "info@lotandgo.ru";
+    const host = process.env.SMTP_HOST ?? "mail.hosting.reg.ru";
+    const port = process.env.SMTP_PORT ?? "587";
+    return Response.json({ ok: true, host, port, user, from: process.env.SMTP_FROM ?? user });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin(request);
