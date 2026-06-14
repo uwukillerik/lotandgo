@@ -102,9 +102,11 @@ function CatalogFiltersModal({
       if (e.key === "Escape") onClose();
     };
     document.body.style.overflow = "hidden";
+    document.body.classList.add("filter-modal-open");
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
+      document.body.classList.remove("filter-modal-open");
       window.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
@@ -115,7 +117,7 @@ function CatalogFiltersModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4"
+      className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="catalog-filters-title"
@@ -227,7 +229,7 @@ function CatalogFiltersModal({
           </FilterSection>
         </div>
 
-        <div className="flex gap-2.5 border-t border-amber-100/80 bg-white/60 px-5 py-4 backdrop-blur sm:px-6">
+        <div className="filter-modal-footer">
           <button
             type="button"
             onClick={onReset}

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { AuctionImage } from "@/components/auction-image";
+import { PriceDisplay } from "@/components/price-display";
 import { Gavel, Users, ChevronRight, Images } from "lucide-react";
 import type { AuctionListItem } from "@shared/api";
 import { Countdown } from "./countdown";
-import { formatPrice, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { PromotionBadge, promotionCardClass } from "./promotion-badge";
 
 const statusMap = {
@@ -81,14 +82,16 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
         </h3>
 
         <div className="mt-auto pt-3">
-          <div className="flex items-end justify-between gap-2">
-            <div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-2 gap-y-1">
+            <div className="min-w-0">
               <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Ставка</p>
-              <span className={cn("price-tag", isPremium ? "text-xl" : "text-lg")}>
-                {formatPrice(auction.currentPrice)}
-              </span>
+              <PriceDisplay
+                value={auction.currentPrice}
+                className={cn(isPremium ? "text-xl" : "text-lg", "font-bold text-slate-900")}
+                amountClassName={cn(isPremium ? "text-xl" : "text-lg", "font-bold")}
+              />
             </div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1 text-right ring-1 ring-slate-100">
+            <div className="shrink-0 rounded-lg bg-slate-50 px-2 py-1 text-right ring-1 ring-slate-100">
               <Countdown
                 endsAt={auction.endsAt}
                 className="text-[11px] font-semibold text-slate-600"

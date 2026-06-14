@@ -3,7 +3,7 @@ import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import type { AuctionListItem } from "@shared/api";
 import { PromotionBadge } from "./promotion-badge";
-import { formatPrice } from "@/lib/utils";
+import { PriceDisplay } from "./price-display";
 
 export function PromotedShowcase({ auctions }: { auctions: AuctionListItem[] }) {
   const featured = auctions.filter(
@@ -49,7 +49,7 @@ export function PromotedShowcase({ auctions }: { auctions: AuctionListItem[] }) 
               <p className="text-[10px] font-bold uppercase tracking-wide text-amber-600">{a.category}</p>
               <p className="mt-0.5 line-clamp-2 text-sm font-bold text-slate-900">{a.title}</p>
               <div className="mt-2 flex items-center justify-between">
-                <span className="price-tag text-base">{formatPrice(a.currentPrice)}</span>
+                <PriceDisplay value={a.currentPrice} className="text-base font-bold text-slate-900" amountClassName="text-base font-bold" />
                 <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-amber-600 opacity-0 transition group-hover:opacity-100">
                   Открыть
                   <ChevronRight className="h-3.5 w-3.5" />

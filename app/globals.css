@@ -349,7 +349,9 @@
   }
 
   .filter-modal-panel {
-    @apply relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[2rem] sm:max-w-lg sm:rounded-[2rem];
+    @apply relative flex w-full flex-col overflow-hidden rounded-t-[2rem] sm:max-w-lg sm:rounded-[2rem];
+    max-height: min(88dvh, calc(100dvh - 5.5rem - env(safe-area-inset-bottom, 0px)));
+    margin-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.98) 0%,
@@ -359,6 +361,22 @@
     box-shadow:
       0 0 0 0.5px rgba(255, 255, 255, 0.6) inset,
       0 24px 60px -20px rgba(15, 23, 42, 0.35);
+  }
+
+  @media (min-width: 640px) {
+    .filter-modal-panel {
+      max-height: 92dvh;
+      margin-bottom: 0;
+    }
+  }
+
+  .filter-modal-footer {
+    @apply flex shrink-0 gap-2.5 border-t border-amber-100/80 bg-white/95 px-5 py-4 backdrop-blur sm:px-6;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.filter-modal-open .liquid-glass-dock-wrap {
+    @apply hidden;
   }
 
   .filter-modal-body {
@@ -701,11 +719,15 @@
   }
 
   .bid-dock-meta {
-    @apply relative z-[1] flex items-end justify-between gap-3;
+    @apply relative z-[1] grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2;
+  }
+
+  .bid-dock-price-block {
+    @apply min-w-0 overflow-hidden;
   }
 
   .bid-dock-price {
-    @apply text-xl font-extrabold tabular-nums tracking-tight text-slate-900;
+    @apply font-extrabold tabular-nums tracking-tight text-slate-900;
   }
 
   .bid-dock-timer {

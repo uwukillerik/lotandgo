@@ -27,6 +27,7 @@ import { useAuctionSocket } from "@/hooks/use-auction-socket";
 import type { AuctionDetail } from "@shared/api";
 import type { SellerContact } from "@shared/api";
 import { formatPrice, cn } from "@/lib/utils";
+import { PriceDisplay } from "@/components/price-display";
 import { AuctionChat } from "@/components/auction-chat";
 import { AuctionDealPanel } from "@/components/auction-deal-panel";
 
@@ -112,14 +113,18 @@ function BidPanel({
         <div className="bid-dock">
           <div className="bid-dock-shine" aria-hidden />
           <div className="bid-dock-meta">
-            <div>
+            <div className="bid-dock-price-block min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
                 Текущая цена
               </p>
-              <p className="bid-dock-price">{formatPrice(currentPrice ?? minBid)}</p>
+              <PriceDisplay
+                value={currentPrice ?? minBid}
+                className="bid-dock-price font-extrabold text-slate-900"
+                amountClassName="text-[clamp(0.95rem,4.2vw,1.35rem)] font-extrabold"
+              />
             </div>
             {endsAt && (
-              <div className="bid-dock-timer">
+              <div className="bid-dock-timer shrink-0">
                 <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">
                   До конца
                 </p>
@@ -388,26 +393,38 @@ export default function AuctionPage() {
             </div>
 
             <div className="price-panel">
-              <div className="relative flex flex-wrap items-end justify-between gap-4">
-                <div>
+              <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:gap-4">
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Текущая цена</p>
-                  <p className="mt-1 text-3xl font-extrabold tabular-nums text-amber-600 sm:text-4xl">
-                    {formatPrice(data.currentPrice)}
-                  </p>
+                  <PriceDisplay
+                    value={data.currentPrice}
+                    className="mt-1 font-extrabold text-amber-600"
+                    amountClassName="text-[clamp(1.5rem,6vw,2.25rem)] font-extrabold"
+                  />
                   {leadingBid && (
                     <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-600">
-                      <Radio className="h-3.5 w-3.5 text-emerald-500" />
-                      Лидер: <span className="font-semibold text-slate-900">{leadingBid.userName}</span>
+                      <Radio className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      <span className="truncate">
+                        Лидер: <span className="font-semibold text-slate-900">{leadingBid.userName}</span>
+                      </span>
                     </p>
                   )}
                 </div>
-                <div className="rounded-xl border border-amber-100 bg-white/80 px-4 py-2.5 text-right shadow-sm backdrop-blur">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">До конца</p>
-                  <Countdown
-                    endsAt={data.endsAt}
-                    className="text-lg font-bold text-slate-900"
-                    urgentClassName="text-lg font-bold text-rose-500 animate-pulse"
-                  />
+                <div className="flex shrink-0 items-center justify-between gap-2 sm:block sm:text-right">
+                  {isLive && (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-emerald-500/30 sm:hidden">
+                      <span className="live-pulse" />
+                      Live
+                    </span>
+                  )}
+                  <div className="rounded-xl border border-amber-100 bg-white/80 px-4 py-2.5 text-right shadow-sm backdrop-blur">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">До конца</p>
+                    <Countdown
+                      endsAt={data.endsAt}
+                      className="text-lg font-bold text-slate-900"
+                      urgentClassName="text-lg font-bold text-rose-500 animate-pulse"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="price-panel-meta relative mt-4 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-slate-200/70 pt-4">
