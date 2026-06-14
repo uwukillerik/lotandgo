@@ -2,13 +2,14 @@
 
 import { useDeferredValue, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { SlidersHorizontal, Flame } from "lucide-react";
+import { SlidersHorizontal, Flame, Plus } from "lucide-react";
+import Link from "next/link";
 import { InnerHeader, HeaderSellButton } from "@/components/site-header";
 import { CatalogFiltersPanel } from "@/components/catalog-filters";
 import { AuctionCard } from "@/components/auction-card";
 import { PromotedShowcase } from "@/components/promoted-showcase";
 import { AuctionCardSkeleton } from "@/components/skeleton";
-import { getAuthHeaders } from "@/components/auth-provider";
+import { getAuthHeaders, useAuth } from "@/components/auth-provider";
 import {
   DEFAULT_CATALOG_FILTERS,
   type CatalogFilters,
@@ -28,6 +29,7 @@ async function fetchAuctions(filters: CatalogFilters) {
 }
 
 export default function CatalogPage() {
+  const { user } = useAuth();
   const [filters, setFilters] = useState<CatalogFilters>(DEFAULT_CATALOG_FILTERS);
   const deferredFilters = useDeferredValue(filters);
 
@@ -52,21 +54,29 @@ export default function CatalogPage() {
       <main className="page-shell">
         <div className="catalog-hero mb-6">
           <div className="absolute right-0 top-0 h-32 w-32 bg-[radial-gradient(circle,rgba(251,191,36,0.12),transparent_70%)]" />
-          <div className="relative flex items-start gap-3">
-            <span className="icon-ring shrink-0">
-              <Flame className="h-5 w-5" strokeWidth={2} />
-            </span>
-            <div>
-              <p className="section-eyebrow">Торговый зал</p>
-              <h2 className="display-heading mt-1 text-xl sm:text-2xl">Каталог аукционов</h2>
-              <p className="mt-1.5 text-sm text-slate-500">
-                {isFetching && !isLoading
-                  ? "Обновляем…"
-                  : liveCount > 0
-                    ? `${auctions.length} лотов · ${liveCount} с активными торгами`
-                    : `${auctions.length} лотов`}
-              </p>
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="icon-ring shrink-0">
+                <Flame className="h-5 w-5" strokeWidth={2} />
+              </span>
+              <div>
+                <p className="section-eyebrow">Торговый зал</p>
+                <h2 className="display-heading mt-1 text-xl sm:text-2xl">Каталог аукционов</h2>
+                <p className="mt-1.5 text-sm text-slate-500">
+                  {isFetching && !isLoading
+                    ? "Обновляем…"
+                    : liveCount > 0
+                      ? `${auctions.length} лотов · ${liveCount} с активными торгами`
+                      : `${auctions.length} лотов`}
+                </p>
+              </div>
             </div>
+            {user && (
+              <Link href="/sell" className="btn-primary inline-flex w-full shrink-0 justify-center sm:w-auto">
+                <Plus className="h-4 w-4" />
+                Выставить лот
+              </Link>
+            )}
           </div>
         </div>
 

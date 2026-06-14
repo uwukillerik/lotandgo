@@ -723,7 +723,7 @@
   }
 
   .bid-dock-price-block {
-    @apply min-w-0 overflow-hidden;
+    @apply min-w-0;
   }
 
   .bid-dock-price {

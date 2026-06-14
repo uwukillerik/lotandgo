@@ -20,6 +20,7 @@ import {
 import { PromotionBadge } from "@/components/promotion-badge";
 import { InnerHeader } from "@/components/site-header";
 import { AuctionImage } from "@/components/auction-image";
+import { ImageLightbox } from "@/components/image-lightbox";
 import { Countdown } from "@/components/countdown";
 import { Skeleton } from "@/components/skeleton";
 import { getAuthHeaders, useAuth } from "@/components/auth-provider";
@@ -113,14 +114,14 @@ function BidPanel({
         <div className="bid-dock">
           <div className="bid-dock-shine" aria-hidden />
           <div className="bid-dock-meta">
-            <div className="bid-dock-price-block min-w-0">
+            <div className="bid-dock-price-block">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
                 Текущая цена
               </p>
               <PriceDisplay
                 value={currentPrice ?? minBid}
-                className="bid-dock-price font-extrabold text-slate-900"
-                amountClassName="text-[clamp(0.95rem,4.2vw,1.35rem)] font-extrabold"
+                amountClassName="text-xl font-extrabold text-slate-900"
+                currencyClassName="text-slate-900"
               />
             </div>
             {endsAt && (
@@ -169,6 +170,7 @@ export default function AuctionPage() {
   const [bidAmount, setBidAmount] = useState("");
   const [error, setError] = useState("");
   const [activeImage, setActiveImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useAuctionSocket(id, user?.id);
 
@@ -303,18 +305,24 @@ export default function AuctionPage() {
           <div className="lg:col-span-2">
             <div
               className={cn(
-                "surface-card relative mx-auto aspect-[4/3] max-h-60 w-full overflow-hidden p-1 sm:max-h-72 lg:max-h-none lg:mx-0",
+                "surface-card relative mx-auto w-full overflow-hidden p-1 lg:mx-0",
                 data.promotion?.tier === "premium" && "ring-2 ring-violet-300/60 promo-card-premium",
                 data.promotion?.tier === "featured" && "ring-2 ring-amber-300/70 promo-card-featured",
               )}
             >
-              <div className="relative h-full w-full overflow-hidden rounded-xl bg-slate-100">
+              <div className="relative aspect-[4/3] w-full min-h-[min(72vw,22rem)] overflow-hidden rounded-xl bg-slate-100 sm:min-h-[20rem] lg:min-h-0">
+              <button
+                type="button"
+                onClick={() => images.length > 0 && setLightboxOpen(true)}
+                className="absolute inset-0 z-0"
+                aria-label="Открыть фото на весь экран"
+              />
               {images.length > 0 ? (
                 <AuctionImage
                   src={images[activeImage]?.url ?? images[0].url}
                   alt={data.title}
                   fill
-                  className="object-cover"
+                  className="pointer-events-none object-contain"
                   priority
                   sizes="(max-width:1024px) 100vw, 40vw"
                 />
@@ -324,7 +332,7 @@ export default function AuctionPage() {
                 </div>
               )}
 
-              <div className="absolute left-3 top-3 z-10 flex flex-col gap-1.5">
+              <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-col gap-1.5">
                 {isLive && (
                   <span className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-emerald-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-emerald-500/30">
                     <span className="live-pulse" />
@@ -334,16 +342,22 @@ export default function AuctionPage() {
                 {data.promotion && <PromotionBadge tier={data.promotion.tier} size="md" />}
               </div>
 
+              {images.length > 0 && (
+                <span className="pointer-events-none absolute bottom-3 right-3 z-10 rounded-lg bg-black/55 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                  Нажмите для просмотра
+                </span>
+              )}
+
               {images.length > 1 && (
                 <>
-                  <span className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1 rounded-lg bg-black/55 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm">
+                  <span className="pointer-events-none absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-lg bg-black/55 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm">
                     <Images className="h-3.5 w-3.5" />
                     {activeImage + 1} / {images.length}
                   </span>
                   <button
                     type="button"
                     onClick={() => setActiveImage((i) => (i > 0 ? i - 1 : images.length - 1))}
-                    className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 shadow-md backdrop-blur hover:bg-white"
+                    className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/90 p-1.5 shadow-md backdrop-blur hover:bg-white"
                     aria-label="Предыдущее фото"
                   >
                     <ChevronLeft className="h-5 w-5 text-slate-800" />
@@ -351,7 +365,7 @@ export default function AuctionPage() {
                   <button
                     type="button"
                     onClick={() => setActiveImage((i) => (i < images.length - 1 ? i + 1 : 0))}
-                    className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-1.5 shadow-md backdrop-blur hover:bg-white"
+                    className="absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/90 p-1.5 shadow-md backdrop-blur hover:bg-white"
                     aria-label="Следующее фото"
                   >
                     <ChevronRight className="h-5 w-5 text-slate-800" />
@@ -369,15 +383,24 @@ export default function AuctionPage() {
                     type="button"
                     onClick={() => setActiveImage(i)}
                     className={cn(
-                      "relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-14 sm:w-14",
+                      "relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-16 sm:w-16",
                       activeImage === i ? "border-amber-500" : "border-slate-200 opacity-70 hover:opacity-100",
                     )}
                   >
-                    <AuctionImage src={img.url} alt="" fill className="object-cover" sizes="56px" />
+                    <AuctionImage src={img.url} alt="" fill className="object-cover" sizes="64px" />
                   </button>
                 ))}
               </div>
             )}
+
+            <ImageLightbox
+              images={images.map((img) => img.url)}
+              index={activeImage}
+              open={lightboxOpen}
+              title={data.title}
+              onClose={() => setLightboxOpen(false)}
+              onIndexChange={setActiveImage}
+            />
           </div>
 
           {/* Основная информация */}
@@ -398,8 +421,9 @@ export default function AuctionPage() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Текущая цена</p>
                   <PriceDisplay
                     value={data.currentPrice}
-                    className="mt-1 font-extrabold text-amber-600"
-                    amountClassName="text-[clamp(1.5rem,6vw,2.25rem)] font-extrabold"
+                    className="mt-1 text-amber-600"
+                    amountClassName="text-2xl font-extrabold sm:text-3xl lg:text-4xl"
+                    currencyClassName="text-amber-600"
                   />
                   {leadingBid && (
                     <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-600">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AuctionImage } from "@/components/auction-image";
 import { PriceDisplay } from "@/components/price-display";
-import { Gavel, Users, ChevronRight, Images } from "lucide-react";
+import { Gavel, Images } from "lucide-react";
 import type { AuctionListItem } from "@shared/api";
 import { Countdown } from "./countdown";
 import { cn } from "@/lib/utils";
@@ -82,32 +82,20 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
         </h3>
 
         <div className="mt-auto pt-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-2 gap-y-1">
-            <div className="min-w-0">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Ставка</p>
-              <PriceDisplay
-                value={auction.currentPrice}
-                className={cn(isPremium ? "text-xl" : "text-lg", "font-bold text-slate-900")}
-                amountClassName={cn(isPremium ? "text-xl" : "text-lg", "font-bold")}
-              />
-            </div>
-            <div className="shrink-0 rounded-lg bg-slate-50 px-2 py-1 text-right ring-1 ring-slate-100">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Ставка</p>
+          <PriceDisplay
+            value={auction.currentPrice}
+            amountClassName={cn(isPremium ? "text-lg sm:text-xl" : "text-base sm:text-lg")}
+          />
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
               <Countdown
                 endsAt={auction.endsAt}
                 className="text-[11px] font-semibold text-slate-600"
                 urgentClassName="text-[11px] font-bold text-rose-500"
               />
             </div>
-          </div>
-          <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-400">
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {auction.bidsCount} ставок
-            </span>
-            <span className="inline-flex items-center gap-0.5 font-semibold text-amber-600 opacity-0 transition group-hover:opacity-100">
-              Открыть
-              <ChevronRight className="h-3 w-3" />
-            </span>
+            <span className="text-[11px] text-slate-400">{auction.bidsCount} став.</span>
           </div>
         </div>
       </div>

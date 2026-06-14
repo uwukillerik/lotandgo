@@ -95,8 +95,7 @@ export function HeaderSellButton() {
   return (
     <Link href="/sell" className="header-sell-chip">
       <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
-      <span className="hidden sm:inline">Выставить лот</span>
-      <span className="sm:hidden">Лот</span>
+      <span className="text-xs font-semibold">Выставить лот</span>
     </Link>
   );
 }

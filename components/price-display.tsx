@@ -4,7 +4,7 @@ export function formatPriceAmount(n: number): string {
   return n.toLocaleString("ru-RU");
 }
 
-/** Цена без переноса символа ₽ на новую строку */
+/** Цена: число и ₽ всегда видны, без обрезки */
 export function PriceDisplay({
   value,
   className,
@@ -17,16 +17,11 @@ export function PriceDisplay({
   currencyClassName?: string;
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex max-w-full items-baseline whitespace-nowrap leading-none",
-        className,
-      )}
-    >
-      <span className={cn("min-w-0 truncate tabular-nums", amountClassName)}>
+    <span className={cn("inline-flex flex-wrap items-baseline gap-x-0.5 leading-tight", className)}>
+      <span className={cn("tabular-nums font-bold text-slate-900", amountClassName)}>
         {formatPriceAmount(value)}
       </span>
-      <span className={cn("ml-0.5 shrink-0 font-bold", currencyClassName)}>₽</span>
+      <span className={cn("shrink-0 font-bold text-slate-800", currencyClassName)}>₽</span>
     </span>
   );
 }

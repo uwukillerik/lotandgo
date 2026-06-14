@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   LayoutGrid,
-  PlusCircle,
   UserCircle2,
   LogIn,
   Bell,
@@ -54,12 +53,6 @@ export function MobileNav() {
       label: "Аукционы",
       icon: LayoutGrid,
       match: (p: string) => p.startsWith("/catalog") || p.startsWith("/auction"),
-    },
-    {
-      href: "/sell",
-      label: "Выставить",
-      icon: PlusCircle,
-      match: (p: string) => p.startsWith("/sell"),
     },
     ...(user
       ? [
