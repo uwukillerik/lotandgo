@@ -6,6 +6,7 @@ import { getAuthHeaders } from "@/components/auth-provider";
 import { formatPrice } from "@/lib/utils";
 import { Users, Package, Gavel, TrendingUp, Wallet, ArrowRight } from "lucide-react";
 import { AdminBadge, AdminCard, AdminPageHeader, AdminStatCard } from "@/components/admin-ui";
+import { AdminEmailPanel } from "@/components/admin-email-panel";
 
 export default function AdminDashboardPage() {
   const { data, isLoading } = useQuery({
@@ -65,6 +66,8 @@ export default function AdminDashboardPage() {
           </Link>
         ))}
       </div>
+
+      <AdminEmailPanel />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminCard className="overflow-hidden p-0">

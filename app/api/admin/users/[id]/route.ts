@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { eq, desc, sql } from "drizzle-orm";
 import { z } from "zod";
+import bcrypt from "bcrypt";
 import { db } from "@/lib/db";
 import {
   users,
@@ -15,6 +16,9 @@ import { kopecksToRubles } from "@/lib/wallet-service";
 
 const patchSchema = z.object({
   role: z.enum(["user", "admin"]).optional(),
+  password: z.string().min(8).max(128).optional(),
+  name: z.string().min(1).max(120).optional(),
+  email: z.string().email().optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -169,19 +173,54 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return Response.json({ error: "Ошибка валидации" }, { status: 400 });
     }
 
-    if (!parsed.data.role) {
+    const updates: Partial<typeof users.$inferInsert> = {};
+    if (parsed.data.role) updates.role = parsed.data.role;
+    if (parsed.data.name) updates.name = parsed.data.name;
+    if (parsed.data.email) updates.email = parsed.data.email;
+    if (parsed.data.password) {
+      updates.passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    }
+
+    if (Object.keys(updates).length === 0) {
       return Response.json({ error: "Нет данных" }, { status: 400 });
     }
 
     const [user] = await db
       .update(users)
-      .set({ role: parsed.data.role })
+      .set(updates)
       .where(eq(users.id, id))
-      .returning();
+      .returning({ id: users.id });
 
     if (!user) {
       return Response.json({ error: "Не найден" }, { status: 404 });
     }
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: Params) {
+  try {
+    const adminId = await requireAdmin(request);
+    const { id } = await params;
+
+    if (id === adminId) {
+      return Response.json({ error: "Нельзя удалить свой аккаунт" }, { status: 400 });
+    }
+
+    const [target] = await db
+      .select({ id: users.id, role: users.role })
+      .from(users)
+      .where(eq(users.id, id));
+
+    if (!target) {
+      return Response.json({ error: "Не найден" }, { status: 404 });
+    }
+
+    await db.update(auctions).set({ winnerId: null }).where(eq(auctions.winnerId, id));
+    await db.delete(users).where(eq(users.id, id));
 
     return Response.json({ ok: true });
   } catch (error) {

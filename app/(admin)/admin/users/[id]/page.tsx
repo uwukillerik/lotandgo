@@ -23,6 +23,7 @@ import {
   AdminPageHeader,
   AdminSectionTitle,
 } from "@/components/admin-ui";
+import { AdminSendWelcomeButton } from "@/components/admin-email-panel";
 import {
   dealStatusLabels,
   lotStatusLabels,
@@ -31,6 +32,9 @@ import {
 } from "@/lib/admin-labels";
 import { formatPrice } from "@/lib/utils";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Trash2, KeyRound } from "lucide-react";
 
 type UserDetail = {
   id: string;
@@ -80,6 +84,8 @@ type UserDetail = {
 export default function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const router = useRouter();
+  const [newPassword, setNewPassword] = useState("");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-user", id],
@@ -106,6 +112,43 @@ export default function AdminUserDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast.success("Роль обновлена");
     },
+  });
+
+  const changePassword = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ password: newPassword }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? "Ошибка");
+      }
+    },
+    onSuccess: () => {
+      setNewPassword("");
+      toast.success("Пароль обновлён");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? "Ошибка удаления");
+      }
+    },
+    onSuccess: () => {
+      toast.success("Пользователь удалён");
+      router.push("/admin/users");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (isLoading) {
@@ -142,12 +185,24 @@ export default function AdminUserDetailPage() {
         title={u.name}
         subtitle={`Зарегистрирован ${new Date(u.createdAt).toLocaleString("ru-RU")}`}
         action={
-          <AdminBtn
-            variant="ghost"
-            onClick={() => toggleRole.mutate(u.role)}
-          >
-            {u.role === "admin" ? "Снять права админа" : "Назначить админом"}
-          </AdminBtn>
+          <div className="flex flex-wrap gap-2">
+            <AdminSendWelcomeButton userId={u.id} userName={u.name} />
+            <AdminBtn variant="ghost" onClick={() => toggleRole.mutate(u.role)}>
+              {u.role === "admin" ? "Снять админа" : "Назначить админом"}
+            </AdminBtn>
+            <AdminBtn
+              variant="ghost"
+              className="text-rose-600 hover:bg-rose-50"
+              onClick={() => {
+                if (confirm(`Удалить ${u.name}? Это необратимо.`)) {
+                  deleteUser.mutate();
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Удалить
+            </AdminBtn>
+          </div>
         }
       />
 
@@ -229,6 +284,25 @@ export default function AdminUserDetailPage() {
                 Согласие на ПДн: {new Date(u.privacyAcceptedAt).toLocaleString("ru-RU")}
               </p>
             )}
+          </div>
+          <div className="mt-6 border-t border-slate-100 pt-4">
+            <AdminSectionTitle>Сменить пароль</AdminSectionTitle>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Новый пароль (мин. 8 символов)"
+                className="input-field flex-1"
+              />
+              <AdminBtn
+                onClick={() => changePassword.mutate()}
+                disabled={newPassword.length < 8 || changePassword.isPending}
+              >
+                <KeyRound className="h-4 w-4" />
+                Сохранить
+              </AdminBtn>
+            </div>
           </div>
         </AdminCard>
 

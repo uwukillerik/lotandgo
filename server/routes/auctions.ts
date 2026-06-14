@@ -188,8 +188,8 @@ router.get("/:id", optionalAuth, async (req: AuthRequest, res) => {
         createdAt: b.createdAt.toISOString(),
       })),
       winnerId: row.winnerId,
-      isWinner: req.userId === row.winnerId,
-      isSeller: req.userId === row.sellerId,
+      isWinner: Boolean(req.userId && row.winnerId && req.userId === row.winnerId),
+      isSeller: Boolean(req.userId && req.userId === row.sellerId),
     },
   });
 });

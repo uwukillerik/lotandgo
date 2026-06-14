@@ -148,19 +148,21 @@ export function SiteHeader({ active }: { active?: "home" | "catalog" | "auth" })
   );
 }
 
-/** Внутренние страницы */
+/** Внутренние страницы — на мобильном только назад + заголовок */
 export function InnerHeader({
   backHref,
   backLabel,
   title,
   right,
   theme = "light",
+  mobileMinimal = true,
 }: {
   backHref: string;
   backLabel: string;
   title?: string;
   right?: React.ReactNode;
   theme?: "light" | "dark";
+  mobileMinimal?: boolean;
 }) {
   const isDark = theme === "dark";
 
@@ -179,12 +181,9 @@ export function InnerHeader({
 
       <div className="header-center">
         {title ? (
-          <div className="flex min-w-0 items-center gap-2">
-            <Link href="/" className="shrink-0 sm:hidden" aria-label="Lot&Go">
-              <HeaderLogo size="sm" />
-            </Link>
-            <h1 className={cn("header-title", isDark && "header-title-dark")}>{title}</h1>
-          </div>
+          <h1 className={cn("header-title max-w-[12rem] sm:max-w-none", isDark && "header-title-dark")}>
+            {title}
+          </h1>
         ) : (
           <BrandLink showText={false} />
         )}
@@ -192,6 +191,12 @@ export function InnerHeader({
 
       {right !== undefined ? (
         <div className="header-actions">{right}</div>
+      ) : mobileMinimal && title ? (
+        <div className="header-actions w-10 sm:w-auto">
+          <span className="hidden sm:block">
+            <DefaultHeaderActions dark={isDark} />
+          </span>
+        </div>
       ) : (
         <DefaultHeaderActions dark={isDark} />
       )}

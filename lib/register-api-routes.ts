@@ -45,6 +45,7 @@ import * as adminLotById from "@/app/api/admin/lots/[id]/route";
 import * as adminAuctions from "@/app/api/admin/auctions/route";
 import * as adminAuctionEnd from "@/app/api/admin/auctions/[id]/end/route";
 import * as adminPayments from "@/app/api/admin/payments/route";
+import * as adminEmailSend from "@/app/api/admin/email/send/route";
 
 export function registerApiRoutes(app: Express) {
   if (!fs.existsSync(uploadDir)) {
@@ -108,6 +109,8 @@ export function registerApiRoutes(app: Express) {
   api.get("/admin/auctions", wrapJson(adminAuctions.GET));
   api.post("/admin/auctions/:id/end", wrapJson(adminAuctionEnd.POST));
   api.get("/admin/payments", wrapJson(adminPayments.GET));
+  api.post("/admin/email/send", wrapJson(adminEmailSend.POST));
+  api.put("/admin/email/send", wrapJson(adminEmailSend.PUT));
 
   app.use("/api", api);
 }

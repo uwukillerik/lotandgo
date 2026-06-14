@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 import { PromotionBadge } from "@/components/promotion-badge";
 import { InnerHeader } from "@/components/site-header";
+import { AuctionImage } from "@/components/auction-image";
 import { Countdown } from "@/components/countdown";
 import { Skeleton } from "@/components/skeleton";
 import { getAuthHeaders, useAuth } from "@/components/auth-provider";
@@ -199,7 +199,8 @@ export default function AuctionPage() {
       if (!res.ok) return null;
       return (await res.json()).contact as SellerContact;
     },
-    enabled: !!data?.isWinner && data?.status === "ended",
+    enabled: !!user && !!data?.isWinner && data?.status === "ended",
+    retry: false,
   });
 
   const bidMutation = useMutation({
@@ -303,7 +304,7 @@ export default function AuctionPage() {
             >
               <div className="relative h-full w-full overflow-hidden rounded-xl bg-slate-100">
               {images.length > 0 ? (
-                <Image
+                <AuctionImage
                   src={images[activeImage]?.url ?? images[0].url}
                   alt={data.title}
                   fill
@@ -366,7 +367,7 @@ export default function AuctionPage() {
                       activeImage === i ? "border-amber-500" : "border-slate-200 opacity-70 hover:opacity-100",
                     )}
                   >
-                    <Image src={img.url} alt="" fill className="object-cover" sizes="56px" />
+                    <AuctionImage src={img.url} alt="" fill className="object-cover" sizes="56px" />
                   </button>
                 ))}
               </div>
@@ -469,7 +470,7 @@ export default function AuctionPage() {
               </div>
             )}
 
-            {data.status === "ended" && data.isWinner && (
+            {data.status === "ended" && user && data.isWinner && (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
                   <Trophy className="h-4 w-4" />
@@ -496,8 +497,24 @@ export default function AuctionPage() {
                     )}
                   </div>
                 ) : (
-                  <p className="mt-1 text-sm text-emerald-600">Загрузка контактов…</p>
+                  <p className="mt-1 text-sm text-emerald-600">Контакты продавца появятся после авторизации победителя.</p>
                 )}
+              </div>
+            )}
+
+            {data.status === "ended" && !user && (
+              <div className="surface-card p-5 text-center">
+                <p className="text-sm font-semibold text-slate-900">Аукцион завершён</p>
+                <p className="mt-1 text-sm text-slate-500">Войдите, чтобы увидеть статус ваших ставок</p>
+                <Link href="/auth" className="btn-primary mt-3 inline-flex px-6">
+                  Войти
+                </Link>
+              </div>
+            )}
+
+            {data.status === "ended" && user && !data.isWinner && !data.isSeller && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                Аукцион завершён. В этот раз победил другой участник.
               </div>
             )}
 

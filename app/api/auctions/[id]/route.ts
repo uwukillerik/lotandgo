@@ -96,8 +96,8 @@ export async function GET(request: NextRequest, { params }: Params) {
         })),
         winnerId: row.winnerId,
         dealStatus: row.dealStatus ?? "none",
-        isWinner: userId === row.winnerId,
-        isSeller: userId === row.sellerId,
+        isWinner: Boolean(userId && row.winnerId && userId === row.winnerId),
+        isSeller: Boolean(userId && userId === row.sellerId),
         canChat: Boolean(chatAccess),
         promotion: promotion
           ? { tier: promotion.tier, expiresAt: promotion.expiresAt }

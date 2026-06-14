@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { AuctionImage } from "@/components/auction-image";
 import { Gavel, Users, ChevronRight, Images } from "lucide-react";
 import type { AuctionListItem } from "@shared/api";
 import { Countdown } from "./countdown";
@@ -29,12 +29,12 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
     >
       <div className={cn("relative overflow-hidden bg-slate-100", isPremium ? "h-44 sm:h-48" : "h-36 sm:h-40")}>
         {img ? (
-          <Image
+          <AuctionImage
             src={img}
             alt={auction.title}
             fill
             sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
-            className="object-cover transition duration-700 group-hover:scale-110"
+            className="transition duration-700 group-hover:scale-110"
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50">

@@ -102,9 +102,9 @@
     @apply relative flex items-stretch gap-0.5 overflow-hidden rounded-[2rem] p-1.5;
     background: linear-gradient(
       165deg,
-      rgba(255, 255, 255, 0.62) 0%,
-      rgba(255, 255, 255, 0.38) 42%,
-      rgba(248, 250, 252, 0.48) 100%
+      rgba(255, 255, 255, 0.94) 0%,
+      rgba(255, 255, 255, 0.88) 50%,
+      rgba(248, 250, 252, 0.92) 100%
     );
     backdrop-filter: blur(40px) saturate(200%) brightness(1.04);
     -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.04);
@@ -195,6 +195,38 @@
 
   .liquid-glass-tab-on {
     @apply font-semibold text-slate-900;
+  }
+
+  @media (max-width: 639px) {
+    .liquid-glass-header {
+      background: rgba(255, 255, 255, 0.97);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      border-color: rgba(226, 232, 240, 0.9);
+      box-shadow:
+        0 4px 20px rgba(15, 23, 42, 0.08),
+        0 1px 0 rgba(255, 255, 255, 1) inset;
+    }
+
+    .liquid-glass-header-shine {
+      opacity: 0.35;
+    }
+
+    .header-title {
+      @apply text-base font-extrabold text-slate-900;
+    }
+
+    .liquid-glass-nav {
+      background: rgba(255, 255, 255, 0.96);
+      border-color: rgba(226, 232, 240, 0.95);
+      box-shadow:
+        0 12px 32px rgba(15, 23, 42, 0.14),
+        0 0 0 1px rgba(226, 232, 240, 0.8) inset;
+    }
+
+    .liquid-glass-tab-idle {
+      @apply text-slate-700;
+    }
   }
 
   @supports not (backdrop-filter: blur(1px)) {
