@@ -506,6 +506,55 @@
     @apply relative z-[2] flex h-[3.25rem] items-center gap-1.5 px-2 sm:h-14 sm:gap-2.5 sm:px-3;
   }
 
+  .liquid-glass-header-inner-stacked {
+    @apply h-auto min-h-[4.5rem] flex-col items-stretch gap-0 py-2 sm:h-14 sm:min-h-0 sm:flex-row sm:items-center sm:gap-2.5 sm:py-0;
+  }
+
+  .header-top-row {
+    @apply flex w-full min-w-0 items-center gap-1.5;
+  }
+
+  .mobile-header-quick-nav {
+    @apply flex w-full gap-1.5 border-t border-slate-200/45 px-0.5 pt-2 sm:hidden;
+  }
+
+  .mobile-header-chip {
+    @apply flex flex-1 items-center justify-center gap-1 rounded-[0.85rem] px-1.5 py-2 text-[11px] font-bold text-slate-600 transition active:scale-[0.97];
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.82) 0%,
+      rgba(248, 250, 252, 0.55) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 1px 4px -1px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .mobile-header-chip-active {
+    @apply text-amber-900;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 251, 235, 0.98) 0%,
+      rgba(254, 243, 199, 0.72) 100%
+    );
+    border-color: rgba(251, 191, 36, 0.45);
+    box-shadow:
+      0 2px 10px -2px rgba(251, 191, 36, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+  }
+
+  .mobile-header-chip-accent {
+    @apply text-slate-900;
+    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 0 2px 10px -2px rgba(245, 158, 11, 0.45);
+  }
+
+  .header-login-pill-mobile {
+    @apply !inline-flex !gap-1 !px-3 !py-1.5 !text-xs !shadow-sm sm:!gap-1.5 sm:!px-4 sm:!py-2 sm:!text-sm;
+  }
+
   .liquid-glass-header-shine {
     @apply pointer-events-none absolute inset-x-3 top-0 z-[1] h-[45%] rounded-t-[1.5rem];
     background: linear-gradient(
@@ -586,6 +635,11 @@
 
   .header-login-pill {
     @apply hidden items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-2 text-sm font-bold text-slate-900 shadow-md shadow-amber-500/25 transition hover:from-amber-400 hover:to-yellow-400 active:scale-[0.97] sm:inline-flex;
+  }
+
+  .header-login-pill-mobile,
+  .liquid-glass-header-inner-stacked .header-login-pill {
+    @apply inline-flex;
   }
 
   /* ── Mobile bid dock ── */

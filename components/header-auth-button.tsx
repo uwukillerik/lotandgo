@@ -30,7 +30,13 @@ function AvatarBubble({
   );
 }
 
-export function HeaderAuthButton({ variant = "light" }: { variant?: "light" | "dark" }) {
+export function HeaderAuthButton({
+  variant = "light",
+  showNameOnMobile = false,
+}: {
+  variant?: "light" | "dark";
+  showNameOnMobile?: boolean;
+}) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -56,7 +62,16 @@ export function HeaderAuthButton({ variant = "light" }: { variant?: "light" | "d
         )}
       >
         <AvatarBubble user={user} variant={variant} />
-        <span className="hidden truncate sm:inline">{user.name.split(" ")[0]}</span>
+        <span
+          className={cn(
+            "truncate",
+            showNameOnMobile
+              ? "max-w-[4.5rem] text-xs sm:max-w-none sm:text-sm"
+              : "hidden sm:inline",
+          )}
+        >
+          {user.name.split(" ")[0]}
+        </span>
       </Link>
     );
   }
