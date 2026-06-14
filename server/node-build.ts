@@ -17,7 +17,7 @@ const distPath = path.join(__dirname, "../spa");
 
 app.use(express.static(distPath));
 
-app.get("*", (req, res) => {
+app.use((req, res) => {
   if (req.path.startsWith("/api/") || req.path.startsWith("/uploads")) {
     return res.status(404).json({ error: "API endpoint not found" });
   }

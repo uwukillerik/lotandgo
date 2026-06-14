@@ -1,3 +1,4 @@
+import { InstallAppButton } from "@/components/install-app-button";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -102,6 +103,7 @@ export default function HomePage() {
                     Смотреть аукционы
                     <ArrowRight className="h-5 w-5" />
                   </Link>
+                  <InstallAppButton variant="ghost" className="w-full sm:w-auto" />
                   <Link href="/auth" className="btn-ghost w-full justify-center py-3.5 text-base sm:w-auto">
                     Создать аккаунт
                   </Link>
@@ -209,13 +211,16 @@ export default function HomePage() {
                 <p className="mx-auto mt-3 max-w-sm text-sm text-slate-600 sm:text-base">
                   Бесплатная регистрация за минуту — без скрытых комиссий
                 </p>
-                <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <div className="mt-8 flex flex-col items-center gap-4">
+                  <InstallAppButton variant="primary" className="items-center justify-center" />
+                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <Link href="/catalog" className="btn-primary w-full px-10 py-3.5 text-base sm:w-auto">
                     Открыть каталог
                   </Link>
                   <Link href="/auth" className="btn-ghost w-full px-8 py-3.5 text-base sm:w-auto">
                     Регистрация
                   </Link>
+                  </div>
                 </div>
               </div>
             </div>

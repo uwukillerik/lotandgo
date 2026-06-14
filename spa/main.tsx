@@ -1,5 +1,6 @@
 import "@/app/globals.css";
 import { createRoot } from "react-dom/client";
+import { registerSW } from "virtual:pwa-register";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { Providers } from "@/components/providers";
 import { ShellLayout } from "./ShellLayout";
@@ -30,6 +31,8 @@ import AdminLotsPage from "@/app/(admin)/admin/lots/page";
 import AdminLotDetailPage from "@/app/(admin)/admin/lots/[id]/page";
 import AdminAuctionsPage from "@/app/(admin)/admin/auctions/page";
 import AdminPaymentsPage from "@/app/(admin)/admin/payments/page";
+
+registerSW({ immediate: true });
 
 function AdminLayout() {
   return (

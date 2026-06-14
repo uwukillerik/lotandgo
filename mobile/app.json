@@ -20,15 +20,11 @@
         "backgroundColor": "#2563EB",
         "foregroundImage": "./assets/logo.png"
       },
-      "package": "com.lotgo.app"
+      "package": "com.lotgo.app",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/logo.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "lotgo-auctions"
-      }
     }
   }
 }

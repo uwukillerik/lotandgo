@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="lotgo_primary">#2563EB</color>
+    <color name="lotgo_accent">#F59E0B</color>
+    <style name="Theme.LotGo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/lotgo_primary</item>
+        <item name="colorPrimaryVariant">#1D4ED8</item>
+        <item name="colorSecondary">@color/lotgo_accent</item>
+        <item name="android:statusBarColor">@color/lotgo_primary</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

@@ -1,42 +1,58 @@
-# Развёртывание Lot&Go на Debian + домен
+# Развёртывание Lot&Go — от А до Я
 
-Инструкция для **Debian 12** (Bookworm). Сервер: VPS с публичным IP, домен (например `lotgo.ru`).
+Полная инструкция для **Debian 12** на VM за роутером **Keenetic**.
 
-## 1. Что понадобится
+| Параметр | Значение |
+|----------|----------|
+| IP сервера (WAN) | `77.50.193.34` |
+| Домен | `lotgo.ru` |
+| VM (внутренний IP) | `192.168.1.56` |
+| HTTP снаружи | `:7080` → внутри VM `:80` |
+| HTTPS снаружи | `:3454` → внутри VM `:443` |
+| SSH снаружи | `:9022` → внутри VM `:22` |
+| Приложение | Node на `127.0.0.1:8081` |
 
-| Компонент | Версия |
-|-----------|--------|
-| Node.js | 20+ (рекомендуется 22 LTS) |
-| PostgreSQL | 15+ |
-| nginx | из репозитория Debian |
-| certbot | Let's Encrypt SSL |
+---
 
-Стек проекта: **Express + Vite SPA** на порту `8081` (настраивается в `.env`).
+## Часть 1. Подготовка VM (Debian)
 
-## 2. Подготовка сервера
+Подключитесь по SSH (сначала из локальной сети, потом через `:9022`):
+
+```bash
+ssh root@192.168.1.56
+# или снаружи: ssh -p 9022 root@77.50.193.34
+```
+
+### 1.1 Обновление и пакеты
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git nginx certbot python3-certbot-nginx ufw
+sudo apt install -y curl git nginx openssl ufw
 ```
 
-Создайте пользователя для приложения:
+> **certbot не нужен** — SSL делаем через `openssl` или `acme.sh` (см. раздел 8).
+
+### 1.2 Пользователь Linux `lotgo`
+
+> Это **не** пользователь PostgreSQL. Нужен отдельно.
 
 ```bash
 sudo adduser --disabled-password lotgo
-sudo usermod -aG sudo lotgo   # опционально
+sudo mkdir -p /var/www/lotgo
+sudo chown lotgo:lotgo /var/www/lotgo
 ```
 
-## 3. Node.js и pnpm
+### 1.3 Node.js 22 + pnpm
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 sudo npm install -g pnpm
 node -v   # v22.x
+pnpm -v
 ```
 
-## 4. PostgreSQL
+### 1.4 PostgreSQL
 
 ```bash
 sudo apt install -y postgresql postgresql-contrib
@@ -51,24 +67,24 @@ CREATE DATABASE lotgo OWNER lotgo;
 \q
 ```
 
-## 5. Загрузка проекта
+---
+
+## Часть 2. Код проекта
 
 ```bash
-sudo mkdir -p /var/www/lotgo
-sudo chown lotgo:lotgo /var/www/lotgo
-sudo -u lotgo git clone <URL_ВАШЕГО_РЕПО> /var/www/lotgo
+sudo -u lotgo git clone https://github.com/uwukillerik/lotandgo.git /var/www/lotgo
 cd /var/www/lotgo
 sudo -u lotgo pnpm install
 ```
 
-## 6. Переменные окружения
+---
+
+## Часть 3. Файл `.env`
 
 ```bash
-sudo -u lotgo cp .env.example .env   # или создайте вручную
+sudo -u lotgo cp .env.example .env
 sudo -u lotgo nano .env
 ```
-
-Пример **production** `.env`:
 
 ```env
 NODE_ENV=production
@@ -76,55 +92,53 @@ PORT=8081
 HOST=127.0.0.1
 
 DATABASE_URL=postgresql://lotgo:надёжный_пароль@localhost:5432/lotgo
-JWT_SECRET=длинная_случайная_строка_минимум_32_символа
+JWT_SECRET=сгенерируйте_openssl_rand
+JWT_REFRESH_SECRET=другая_строка_openssl_rand
 
-# Ваш домен (через запятую — если несколько)
-CORS_ORIGIN=https://lotgo.ru,https://www.lotgo.ru
+CORS_ORIGIN=http://lotgo.ru:7080,https://lotgo.ru:3454,http://www.lotgo.ru:7080,https://www.lotgo.ru:3454,http://77.50.193.34:7080,https://77.50.193.34:3454
 
-# Загрузки (папка uploads в корне проекта)
 UPLOAD_DIR=uploads
-
-# Платежи: local (тест) или stripe
 PAYMENT_PROVIDER=local
 ```
 
-Сгенерировать секрет:
+Секреты:
 
 ```bash
 openssl rand -base64 48
 ```
 
-## 7. База данных
+Права:
+
+```bash
+sudo chown lotgo:lotgo /var/www/lotgo/.env
+sudo chmod 600 /var/www/lotgo/.env
+```
+
+---
+
+## Часть 4. База данных и сборка
 
 ```bash
 cd /var/www/lotgo
 sudo -u lotgo pnpm db:migrate
-sudo -u lotgo pnpm db:seed        # базовые данные
-# sudo -u lotgo pnpm db:seed:demo  # демо-лоты (опционально)
-```
-
-Папка загрузок:
-
-```bash
-sudo -u lotgo mkdir -p uploads
-```
-
-## 8. Сборка фронтенда
-
-```bash
-cd /var/www/lotgo
+sudo -u lotgo pnpm db:seed
+sudo -u lotgo mkdir -p uploads public/downloads
 sudo -u lotgo pnpm build
 ```
 
-Проверка локально на сервере:
+Проверка вручную (дождитесь строки `Lot&Go → http://localhost:8081`):
 
 ```bash
-sudo -u lotgo pnpm start
+sudo systemctl stop lotgo 2>/dev/null || true
+sudo -u lotgo NODE_ENV=production pnpm start
+# в другом терминале:
 curl -I http://127.0.0.1:8081
-# Ctrl+C после проверки
+# Ctrl+C
 ```
 
-## 9. systemd (автозапуск)
+---
+
+## Часть 5. systemd (автозапуск)
 
 ```bash
 sudo nano /etc/systemd/system/lotgo.service
@@ -139,6 +153,7 @@ After=network.target postgresql.service
 Type=simple
 User=lotgo
 WorkingDirectory=/var/www/lotgo
+EnvironmentFile=/var/www/lotgo/.env
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/pnpm start
 Restart=on-failure
@@ -152,83 +167,152 @@ WantedBy=multi-user.target
 sudo systemctl daemon-reload
 sudo systemctl enable lotgo
 sudo systemctl start lotgo
+sleep 6
 sudo systemctl status lotgo
+curl -I http://127.0.0.1:8081
 ```
 
-Логи: `journalctl -u lotgo -f`
+Логи: `sudo journalctl -u lotgo -n 50 --no-pager`
 
-## 10. DNS домена
+---
 
-У регистратора домена создайте записи:
+## Часть 6. nginx
 
-| Тип | Имя | Значение |
-|-----|-----|----------|
-| A | `@` | IP_ВАШЕГО_СЕРВЕРА |
-| A | `www` | IP_ВАШЕГО_СЕРВЕРА |
-
-Подождите 5–30 минут распространения DNS.
-
-## 11. nginx (reverse proxy)
+На VM nginx слушает **80 и 443** (не 7080/3454 — это порты роутера).
 
 ```bash
-sudo nano /etc/nginx/sites-available/lotgo
-```
-
-```nginx
-server {
-    listen 80;
-    server_name lotgo.ru www.lotgo.ru;
-
-    client_max_body_size 20M;
-
-    location / {
-        proxy_pass http://127.0.0.1:8081;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-```bash
-sudo ln -s /etc/nginx/sites-available/lotgo /etc/nginx/sites-enabled/
+sudo cp /var/www/lotgo/deploy/nginx/lotgo.conf /etc/nginx/sites-available/lotgo
+sudo ln -sf /etc/nginx/sites-available/lotgo /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
+curl -I http://127.0.0.1
 ```
 
-## 12. SSL (HTTPS)
+---
+
+## Часть 7. Keenetic (проброс портов)
+
+**Интернет → Доступ из интернета → Переадресация портов**
+
+| Протокол | Снаружи | Внутри IP | Внутри порт |
+|----------|---------|-----------|-------------|
+| TCP | 7080 | 192.168.1.56 | 80 |
+| TCP | 3454 | 192.168.1.56 | 443 |
+| TCP | 9022 | 192.168.1.56 | 22 |
+
+**Домашняя сеть** → зарезервировать IP VM: `192.168.1.56`.
+
+Проверка с **телефона без Wi‑Fi**:
+
+- `http://77.50.193.34:7080`
+
+---
+
+## Часть 8. SSL (без certbot)
+
+### Вариант A — самоподписанный (5 минут)
 
 ```bash
-sudo certbot --nginx -d lotgo.ru -d www.lotgo.ru
+cd /var/www/lotgo
+chmod +x scripts/ssl-self-signed.sh
+sudo ./scripts/ssl-self-signed.sh lotgo.ru
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Certbot настроит редирект HTTP → HTTPS. Продление: `sudo certbot renew --dry-run`.
+Сайт: `https://77.50.193.34:3454` (браузер предупредит — нормально для теста).
 
-Обновите `.env`:
+### Вариант B — Let's Encrypt через acme.sh + DNS Reg.ru
 
-```env
-CORS_ORIGIN=https://lotgo.ru,https://www.lotgo.ru
+```bash
+export REGRU_Username="логин_reg.ru"
+export REGRU_Password="api_пароль"
+chmod +x scripts/ssl-acme-dns.sh
+./scripts/ssl-acme-dns.sh lotgo.ru
 ```
+
+После SSL:
 
 ```bash
 sudo systemctl restart lotgo
 ```
 
-## 13. Файрвол
+---
 
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw enable
+## Часть 9. DNS (Reg.ru)
+
+В панели домена **только**:
+
+| Тип | Имя | Значение |
+|-----|-----|----------|
+| A | `@` | `77.50.193.34` |
+| A | `www` | `77.50.193.34` |
+
+**Удалите:**
+
+- записи с IP `37.140.192.68` (парковка Reg.ru)
+- лишние AAAA (IPv6), если IPv6 не настраивали
+
+Проверка на ПК:
+
+```powershell
+nslookup lotgo.ru
 ```
 
-Порт `8081` снаружи **не открывайте** — только nginx на 80/443.
+Должен быть `77.50.193.34`.
 
-## 14. Обновление версии
+Сайт после DNS:
+
+- `http://lotgo.ru:7080`
+- `https://lotgo.ru:3454`
+
+---
+
+## Часть 10. APK (Android SDK, без Expo)
+
+Нативный проект: **`android-app/`** (Kotlin + WebView + Gradle). Expo не используется.
+
+### На Windows
+
+1. [Android Studio](https://developer.android.com/studio)
+2. PowerShell:
+
+```powershell
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+cd C:\Users\DA\Desktop\auctions
+pnpm build:apk
+```
+
+Скрипт сам:
+- создаёт ключ подписи **Lot&Go** (`keystore/lotgo-release.jks`)
+- собирает **подписанный** `app-release.apk`
+- копирует в `public/downloads/lotgo.apk`
+
+### Залить на сервер
+
+```powershell
+scp -P 9022 public/downloads/lotgo.apk lotgo@77.50.193.34:/var/www/lotgo/public/downloads/
+```
+
+На сервере:
+
+```bash
+cd /var/www/lotgo && sudo -u lotgo pnpm build && sudo systemctl restart lotgo
+```
+
+### Открыть в Android Studio
+
+File → Open → `android-app` → Build → Build APK(s).
+
+---
+
+## Часть 11. PWA
+
+Собирается автоматически при `pnpm build`. На главной — **«Установить приложение»** (Chrome/Edge на телефоне).
+
+---
+
+## Часть 12. Обновление версии
 
 ```bash
 cd /var/www/lotgo
@@ -239,28 +323,31 @@ sudo -u lotgo pnpm build
 sudo systemctl restart lotgo
 ```
 
-## 15. Чеклист после деплоя
+---
 
-- [ ] Сайт открывается по `https://lotgo.ru`
+## Чеклист
+
+- [ ] `curl -I http://127.0.0.1:8081` → 200
+- [ ] `curl -I http://127.0.0.1` → 200
+- [ ] `http://77.50.193.34:7080` открывается с телефона (без Wi‑Fi)
+- [ ] `nslookup lotgo.ru` → `77.50.193.34`
 - [ ] Регистрация и вход работают
-- [ ] WebSocket (ставки в реальном времени) — в DevTools нет ошибок `ws`
-- [ ] Загрузка фото лота сохраняется в `uploads/`
-- [ ] Админ-панель: `/admin` (логин `admin@lotgo.ru` после seed)
+- [ ] WebSocket (ставки) без ошибок в DevTools
+- [ ] `/downloads/lotgo.apk` скачивается
 
-## Демо-аккаунты (после `db:seed:demo`)
-
-Пароль для всех: `Demo123456`
-
-- `admin@lotgo.ru` — администратор
-- `seller@lotgo.ru` — продавец
-- `bidder1@lotgo.ru`, `bidder2@lotgo.ru` — покупатели
+---
 
 ## Частые проблемы
 
-**502 Bad Gateway** — сервис не запущен: `systemctl status lotgo`.
+| Симптом | Решение |
+|---------|---------|
+| **502 Bad Gateway** | `systemctl status lotgo`, `journalctl -u lotgo -n 30` |
+| **Could not connect 8081** | Подождите 5–6 сек после старта; проверьте `.env` |
+| **Missing parameter name** | В `server.ts` должно быть `app.use`, не `app.get("*")` |
+| **Домен не открывается, IP открывается** | DNS указывает не на `77.50.193.34` |
+| **Дома не открывается, с мобильного ок** | Нет hairpin NAT на Keenetic — проверяйте с мобильного интернета |
+| **CORS** | Проверьте `CORS_ORIGIN` — URL с портами `:7080` / `:3454` |
 
-**CORS / cookies** — проверьте `CORS_ORIGIN` и что сайт открыт по HTTPS с тем же доменом.
+## Демо-аккаунты (`db:seed:demo`)
 
-**WebSocket обрывается** — в nginx нужны заголовки `Upgrade` и `Connection` (см. конфиг выше).
-
-**База не подключается** — проверьте `DATABASE_URL`, что PostgreSQL слушает `localhost` и пользователь `lotgo` имеет доступ.
+Пароль: `Demo123456` — `admin@lotgo.ru`, `seller@lotgo.ru`, `bidder1@lotgo.ru`

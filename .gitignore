@@ -29,3 +29,8 @@ dist-ssr
 .env
 .env.local
 uploads/
+public/downloads/*.apk
+!public/downloads/.gitkeep
+android-app/keystore/*.jks
+android-app/keystore/keystore.properties
+android-app/local.properties
