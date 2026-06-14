@@ -8,6 +8,7 @@
     "dev:mobile": "cd mobile && npx expo start",
     "build": "vite build",
     "build:apk": "powershell -ExecutionPolicy Bypass -File scripts/build-apk.ps1",
+    "update:server": "bash scripts/update-server.sh",
     "start": "cross-env NODE_ENV=production tsx server.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx lib/db/migrate.ts",

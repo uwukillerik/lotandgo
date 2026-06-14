@@ -314,13 +314,26 @@ File → Open → `android-app` → Build → Build APK(s).
 
 ## Часть 12. Обновление версии
 
+**Одна команда** (от `root` на сервере):
+
+```bash
+bash /var/www/lotgo/scripts/update-server.sh
+```
+
+Скрипт сам: подтянет недостающие ключи в `.env` из `deploy/env.production`, `git pull`, `pnpm install`, миграции, сборку и перезапуск. Ждёт до 25 секунд, пока поднимется `:8081`.
+
+Вручную (если нужно):
+
 ```bash
 cd /var/www/lotgo
-sudo -u lotgo git pull
+bash scripts/sync-env.sh
+sudo -u lotgo git pull origin main
 sudo -u lotgo pnpm install
 sudo -u lotgo pnpm db:migrate
 sudo -u lotgo pnpm build
 sudo systemctl restart lotgo
+sleep 10
+curl -I http://127.0.0.1:8081
 ```
 
 ---
