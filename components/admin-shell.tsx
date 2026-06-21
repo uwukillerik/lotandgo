@@ -11,6 +11,7 @@ import {
   CreditCard,
   ArrowLeft,
   Loader2,
+  Download,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const links = [
   { href: "/admin/lots", label: "Лоты", icon: Package },
   { href: "/admin/auctions", label: "Аукционы", icon: Gavel },
   { href: "/admin/payments", label: "Финансы", icon: CreditCard },
+  { href: "/admin/tools", label: "Почта и CSV", icon: Download },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

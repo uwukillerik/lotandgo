@@ -3,8 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Loader2, MessageSquare, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, MessageSquare, Plus, Save, Trash2, X } from "lucide-react";
+import { LOT_CATEGORIES } from "@shared/categories";
 import { getAuthHeaders } from "@/components/auth-provider";
 import { AdminBadge, AdminBtn, AdminCard, AdminPageHeader } from "@/components/admin-ui";
 import {
@@ -96,6 +98,53 @@ export default function AdminLotDetailPage() {
     },
   });
 
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editImages, setEditImages] = useState<Array<{ id?: string; url: string }>>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!data) return;
+    setEditTitle(data.title);
+    setEditDescription(data.description);
+    setEditCategory(data.category);
+    setEditImages(data.images.map((i) => ({ id: i.id, url: i.url })));
+    setRemovedImageIds([]);
+  }, [data?.id]);
+
+  const saveLot = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/admin/lots/${id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          category: editCategory,
+          images: editImages
+            .filter((i) => i.url.trim())
+            .map((img, index) => ({
+              id: img.id,
+              url: img.url.trim(),
+              sortOrder: index,
+            })),
+          removeImageIds: removedImageIds,
+        }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? "Ошибка сохранения");
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-lot", id] });
+      qc.invalidateQueries({ queryKey: ["admin-lots"] });
+      toast.success("Лот сохранён");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -170,6 +219,90 @@ export default function AdminLotDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-6">
+          <AdminCard className="space-y-4">
+            <h3 className="font-bold text-slate-900">Редактирование лота</h3>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-slate-700">Название</span>
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="input-field w-full"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-slate-700">Категория</span>
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                className="input-field w-full"
+              >
+                {LOT_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-semibold text-slate-700">Описание</span>
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                rows={5}
+                className="input-field w-full resize-y"
+              />
+            </label>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-700">Фотографии (URL)</span>
+                <button
+                  type="button"
+                  onClick={() => setEditImages((imgs) => [...imgs, { url: "" }])}
+                  className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Добавить
+                </button>
+              </div>
+              {editImages.map((img, index) => (
+                <div key={img.id ?? `new-${index}`} className="flex gap-2">
+                  <input
+                    value={img.url}
+                    onChange={(e) =>
+                      setEditImages((imgs) =>
+                        imgs.map((item, i) => (i === index ? { ...item, url: e.target.value } : item)),
+                      )
+                    }
+                    placeholder="https://… или /uploads/файл.jpg"
+                    className="input-field min-w-0 flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (img.id) setRemovedImageIds((ids) => [...ids, img.id!]);
+                      setEditImages((imgs) => imgs.filter((_, i) => i !== index));
+                    }}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    aria-label="Удалить фото"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => saveLot.mutate()}
+              disabled={saveLot.isPending}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-60"
+            >
+              {saveLot.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Сохранить изменения
+            </button>
+          </AdminCard>
+
           {cover && (
             <AdminCard className="overflow-hidden p-0">
               <div className="relative aspect-[16/9] w-full bg-slate-900">
@@ -188,7 +321,7 @@ export default function AdminLotDetailPage() {
           )}
 
           <AdminCard>
-            <h3 className="font-bold text-slate-900">Описание</h3>
+            <h3 className="font-bold text-slate-900">Описание (текущее)</h3>
             <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
               {lot.description || "—"}
             </p>

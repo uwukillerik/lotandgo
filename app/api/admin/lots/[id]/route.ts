@@ -11,11 +11,25 @@ import {
   wallets,
   auctionMessages,
 } from "@/lib/db/schema";
+import { LOT_CATEGORIES } from "@shared/categories";
 import { requireAdmin, handleApiError } from "@/lib/auth-request";
 import { kopecksToRubles } from "@/lib/wallet-service";
 
 const patchSchema = z.object({
   status: z.enum(["draft", "active", "ended", "sold"]).optional(),
+  title: z.string().min(3).optional(),
+  description: z.string().min(10).optional(),
+  category: z.enum(LOT_CATEGORIES).optional(),
+  images: z
+    .array(
+      z.object({
+        id: z.string().uuid().optional(),
+        url: z.string().min(1, "Укажите URL"),
+        sortOrder: z.number().int().min(0).optional(),
+      }),
+    )
+    .optional(),
+  removeImageIds: z.array(z.string().uuid()).optional(),
 });
 
 type Params = { params: Promise<{ id: string }> };
@@ -33,7 +47,6 @@ export async function GET(request: NextRequest, { params }: Params) {
         category: lots.category,
         status: lots.status,
         createdAt: lots.createdAt,
-        sellerId: lots.sellerId,
         sellerId: lots.sellerId,
         sellerName: users.name,
         sellerEmail: users.email,
@@ -137,17 +150,50 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { id } = await params;
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
-    if (!parsed.success || !parsed.data.status) {
-      return Response.json({ error: "Ошибка валидации" }, { status: 400 });
+    if (!parsed.success) {
+      return Response.json({ error: "Ошибка валидации", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const [lot] = await db
-      .update(lots)
-      .set({ status: parsed.data.status })
-      .where(eq(lots.id, id))
-      .returning();
+    const { status, title, description, category, images, removeImageIds } = parsed.data;
+    if (!status && !title && !description && !category && !images && !removeImageIds?.length) {
+      return Response.json({ error: "Нет данных для обновления" }, { status: 400 });
+    }
 
-    if (!lot) return Response.json({ error: "Не найден" }, { status: 404 });
+    const lotUpdates: Partial<typeof lots.$inferInsert> = {};
+    if (status) lotUpdates.status = status;
+    if (title) lotUpdates.title = title;
+    if (description) lotUpdates.description = description;
+    if (category) lotUpdates.category = category;
+
+    if (Object.keys(lotUpdates).length > 0) {
+      const [lot] = await db.update(lots).set(lotUpdates).where(eq(lots.id, id)).returning();
+      if (!lot) return Response.json({ error: "Не найден" }, { status: 404 });
+    } else {
+      const [lot] = await db.select({ id: lots.id }).from(lots).where(eq(lots.id, id));
+      if (!lot) return Response.json({ error: "Не найден" }, { status: 404 });
+    }
+
+    if (removeImageIds?.length) {
+      for (const imageId of removeImageIds) {
+        await db.delete(lotImages).where(eq(lotImages.id, imageId));
+      }
+    }
+
+    if (images) {
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        const sortOrder = img.sortOrder ?? i;
+        if (img.id) {
+          await db
+            .update(lotImages)
+            .set({ url: img.url, sortOrder })
+            .where(eq(lotImages.id, img.id));
+        } else {
+          await db.insert(lotImages).values({ lotId: id, url: img.url, sortOrder });
+        }
+      }
+    }
+
     return Response.json({ ok: true });
   } catch (error) {
     return handleApiError(error);

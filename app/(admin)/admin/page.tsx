@@ -4,10 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { getAuthHeaders } from "@/components/auth-provider";
 import { formatPrice } from "@/lib/utils";
-import { Users, Package, Gavel, TrendingUp, Wallet, ArrowRight } from "lucide-react";
+import { Users, Package, Gavel, TrendingUp, Wallet, ArrowRight, Download } from "lucide-react";
 import { AdminBadge, AdminCard, AdminPageHeader, AdminStatCard } from "@/components/admin-ui";
-import { AdminEmailPanel } from "@/components/admin-email-panel";
-import { AdminExportPanel } from "@/components/admin-export-panel";
 
 export default function AdminDashboardPage() {
   const { data, isLoading } = useQuery({
@@ -62,6 +60,7 @@ export default function AdminDashboardPage() {
           { href: "/admin/auctions", label: "Аукционы", desc: "Завершить торги, сделки" },
           { href: "/admin/users", label: "Пользователи", desc: "Роли и верификация" },
           { href: "/admin/payments", label: "Финансы", desc: "Кошельки и депозиты" },
+          { href: "/admin/tools", label: "Почта и CSV", desc: "Тестовые письма и выгрузка" },
         ].map((item) => (
           <Link
             key={item.href}
@@ -77,8 +76,23 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      <AdminEmailPanel />
-      <AdminExportPanel />
+      <Link
+        href="/admin/tools"
+        className="flex items-center justify-between rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50 to-white p-5 shadow-sm transition hover:border-amber-300 hover:shadow-md"
+      >
+        <div className="flex items-center gap-4">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/25">
+            <Download className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="font-bold text-slate-900">Почта и экспорт CSV</p>
+            <p className="text-sm text-slate-500">
+              Отправить тестовое письмо на любой email · выгрузить пользователей, лоты, аукционы
+            </p>
+          </div>
+        </div>
+        <ArrowRight className="h-5 w-5 text-amber-500" />
+      </Link>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminCard className="overflow-hidden p-0">

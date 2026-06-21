@@ -15,9 +15,14 @@ import {
   Shield,
   Zap,
   Sparkles,
+  Eye,
+  EyeOff,
+  Check,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { cn } from "@/lib/utils";
+import { getPasswordStrength, isPasswordStrongEnough, isValidRuPhone } from "@shared/validation";
 
 const features = [
   { icon: Gavel, text: "Живые торги в реальном времени" },
@@ -41,6 +46,11 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+
+  const passwordStrength = getPasswordStrength(formData.password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +58,12 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      if (!isLogin && formData.phone.trim() && !isValidRuPhone(formData.phone)) {
+        throw new Error("Телефон: +7 9XX XXX-XX-XX или 8 9XX XXX-XX-XX");
+      }
+      if (!isLogin && !isPasswordStrongEnough(formData.password)) {
+        throw new Error("Пароль: минимум 8 символов, буква и цифра");
+      }
       if (!isLogin && formData.password !== formData.confirmPassword) {
         throw new Error("Пароли не совпадают");
       }
@@ -238,38 +254,119 @@ export default function AuthPage() {
                   <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <input
                     type="tel"
-                    placeholder="Телефон (необязательно)"
+                    placeholder="+7 900 123-45-67"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className={inputClass}
+                    onBlur={() => setPhoneTouched(true)}
+                    className={cn(
+                      inputClass,
+                      phoneTouched && formData.phone && !isValidRuPhone(formData.phone) && "ring-2 ring-rose-300",
+                    )}
                   />
+                  {phoneTouched && formData.phone && !isValidRuPhone(formData.phone) && (
+                    <p className="mt-1 text-xs text-rose-600">Формат: +7 9XX XXX-XX-XX или 8 9XX XXX-XX-XX</p>
+                  )}
                 </div>
               )}
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
-                  type="password"
-                  placeholder="Пароль (мин. 8 символов)"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={isLogin ? "Пароль" : "Пароль (мин. 8 символов, буква и цифра)"}
                   autoComplete={isLogin ? "current-password" : "new-password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={inputClass}
+                  className={cn(inputClass, "pr-12")}
                   required
                   minLength={8}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
+              {!isLogin && formData.password && (
+                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3">
+                  <div className="mb-2 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Надёжность пароля</span>
+                    <span
+                      className={cn(
+                        "font-bold",
+                        passwordStrength.score >= 3 ? "text-emerald-600" : passwordStrength.score >= 2 ? "text-amber-600" : "text-rose-600",
+                      )}
+                    >
+                      {passwordStrength.label}
+                    </span>
+                  </div>
+                  <div className="mb-3 flex gap-1">
+                    {[1, 2, 3, 4].map((n) => (
+                      <div
+                        key={n}
+                        className={cn(
+                          "h-1.5 flex-1 rounded-full transition-colors",
+                          n <= passwordStrength.score
+                            ? passwordStrength.score >= 3
+                              ? "bg-emerald-500"
+                              : passwordStrength.score >= 2
+                                ? "bg-amber-500"
+                                : "bg-rose-500"
+                            : "bg-slate-200",
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-slate-600">
+                    {[
+                      { ok: passwordStrength.checks.length, text: "Минимум 8 символов" },
+                      { ok: passwordStrength.checks.letter, text: "Хотя бы одна буква" },
+                      { ok: passwordStrength.checks.digit, text: "Хотя бы одна цифра" },
+                      { ok: passwordStrength.checks.special, text: "Спецсимвол (рекомендуется)" },
+                    ].map(({ ok, text }) => (
+                      <li key={text} className="flex items-center gap-2">
+                        {ok ? (
+                          <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        ) : (
+                          <X className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                        )}
+                        <span className={ok ? "text-slate-700" : "text-slate-400"}>{text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {!isLogin && (
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="Подтвердите пароль"
                     autoComplete="new-password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className={inputClass}
+                    className={cn(
+                      inputClass,
+                      "pr-12",
+                      formData.confirmPassword &&
+                        formData.password !== formData.confirmPassword &&
+                        "ring-2 ring-rose-300",
+                    )}
                     required={!isLogin}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    aria-label={showConfirmPassword ? "Скрыть пароль" : "Показать пароль"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                  {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                    <p className="mt-1 text-xs text-rose-600">Пароли не совпадают</p>
+                  )}
                 </div>
               )}
 

@@ -30,6 +30,7 @@ import AdminLotsPage from "@/app/(admin)/admin/lots/page";
 import AdminLotDetailPage from "@/app/(admin)/admin/lots/[id]/page";
 import AdminAuctionsPage from "@/app/(admin)/admin/auctions/page";
 import AdminPaymentsPage from "@/app/(admin)/admin/payments/page";
+import AdminToolsPage from "@/app/(admin)/admin/tools/page";
 import ProfileFavoritesPage from "@/app/(app)/profile/favorites/page";
 import NotFoundPage from "@/app/not-found";
 
@@ -82,6 +83,7 @@ holder.__lotgoRoot.render(
           <Route path="lots/:id" element={<AdminLotDetailPage />} />
           <Route path="auctions" element={<AdminAuctionsPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
+          <Route path="tools" element={<AdminToolsPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

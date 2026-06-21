@@ -89,7 +89,7 @@ async function seed() {
       description:
         "Аутентичный письменный стол из красного дерева. Сохранился в отличном состоянии, все фурнитура оригинальная.",
       category: "Мебель",
-      imageUrl: "/uploads/seed-desk.jpg",
+      imageUrl: "https://images.unsplash.com/photo-1578504935244-9457d9db3a44?w=800&q=80",
     },
     {
       sellerId: seller.id,
@@ -97,7 +97,7 @@ async function seed() {
       description:
         "Редкие карманные часы в рабочем состоянии. Механизм обслужен, есть документы о происхождении.",
       category: "Антиквариат",
-      imageUrl: "/uploads/seed-watch.jpg",
+      imageUrl: "https://images.unsplash.com/photo-1579783902610-e75fb1f9b78e?w=800&q=80",
     },
     {
       sellerId: seller.id,
@@ -105,7 +105,7 @@ async function seed() {
       description:
         "Украшение эпохи Art Deco, серебро 925 пробы, натуральные аметисты.",
       category: "Украшения",
-      imageUrl: "/uploads/seed-jewelry.jpg",
+      imageUrl: "https://images.unsplash.com/photo-1610701596007-6a2494f90cdb?w=800&q=80",
     },
   ];
 

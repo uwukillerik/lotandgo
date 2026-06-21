@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Loader2, Send, AlertCircle } from "lucide-react";
-import { getAuthHeaders, useAuth } from "@/components/auth-provider";
+import { getAuthHeaders } from "@/components/auth-provider";
 import { AdminBtn, AdminCard, AdminSectionTitle } from "@/components/admin-ui";
 import { toast } from "sonner";
 
@@ -11,13 +11,22 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
-export function AdminEmailPanel() {
-  const { user } = useAuth();
-  const [to, setTo] = useState("");
+const EMAIL_STORAGE_KEY = "lotgo_admin_test_email";
 
-  useEffect(() => {
-    if (user?.email && !to) setTo(user.email);
-  }, [user?.email, to]);
+export function AdminEmailPanel() {
+  const [to, setTo] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(EMAIL_STORAGE_KEY) ?? "";
+  });
+
+  const handleEmailChange = (value: string) => {
+    setTo(value);
+    if (value.trim()) {
+      localStorage.setItem(EMAIL_STORAGE_KEY, value);
+    } else {
+      localStorage.removeItem(EMAIL_STORAGE_KEY);
+    }
+  };
 
   const { data: smtp, isError: smtpError } = useQuery({
     queryKey: ["admin-email-smtp"],
@@ -79,15 +88,18 @@ export function AdminEmailPanel() {
           ? `SMTP: ${smtp.host}:${smtp.port} · ${smtp.user}${smtp.configured ? "" : " · пароль не задан"}`
           : "Загрузка настроек SMTP…"}
       </p>
+      <p className="text-xs text-slate-400">
+        Введите любой email получателя — письмо уйдёт на указанный адрес, не на ваш аккаунт.
+      </p>
 
       <label className="block text-sm">
         <span className="mb-1 block font-semibold text-slate-700">Кому</span>
         <input
           type="email"
           value={to}
-          onChange={(e) => setTo(e.target.value)}
+          onChange={(e) => handleEmailChange(e.target.value)}
           className="input-field"
-          placeholder="email@example.com"
+          placeholder="test@gmail.com — любой адрес"
           autoComplete="email"
         />
         {to && !isValidEmail(to) && (

@@ -31,15 +31,24 @@ async function start() {
     app.use(vite.middlewares);
   } else {
     const dist = path.resolve(import.meta.dirname, "dist/spa");
-    app.use(express.static(dist));
+
+    app.use(express.static(dist, { index: false }));
+
     app.use((req, res, next) => {
       if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
         return next();
       }
-      if (path.extname(req.path)) {
-        return res.status(404).end();
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        return next();
       }
-      res.sendFile(path.join(dist, "index.html"));
+      const assetPath = path.join(dist, req.path);
+      if (req.path !== "/" && fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
+        return res.sendFile(assetPath);
+      }
+      if (!path.extname(req.path)) {
+        return res.sendFile(path.join(dist, "index.html"));
+      }
+      return res.status(404).end();
     });
   }
 

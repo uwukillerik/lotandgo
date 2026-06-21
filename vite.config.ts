@@ -19,7 +19,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: "inline",
+      injectRegister: "auto",
+      filename: "sw.js",
+      manifestFilename: "manifest.webmanifest",
       includeAssets: ["favicon.ico", "icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
         name: "Lot&Go — Аукционы",

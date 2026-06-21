@@ -10,6 +10,7 @@ import {
   Radio,
   Banknote,
   Sparkles,
+  Search,
 } from "lucide-react";
 import { LOT_CATEGORIES } from "@shared/categories";
 import {

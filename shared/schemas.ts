@@ -1,13 +1,28 @@
 import { z } from "zod";
 import { LOT_CATEGORIES } from "./categories";
+import { isValidRuPhone, normalizeRuPhone } from "./validation";
+
+const phoneSchema = z
+  .string()
+  .optional()
+  .refine((v) => !v?.trim() || isValidRuPhone(v), {
+    message: "Телефон: +7 9XX XXX-XX-XX или 8 9XX XXX-XX-XX",
+  })
+  .transform((v) => (v?.trim() ? normalizeRuPhone(v.trim()) : undefined));
+
+const passwordSchema = z
+  .string()
+  .min(8, "Пароль минимум 8 символов")
+  .regex(/[a-zA-Zа-яА-Я]/, "Добавьте хотя бы одну букву")
+  .regex(/\d/, "Добавьте хотя бы одну цифру");
 
 export const registerSchema = z
   .object({
     email: z.string().email("Некорректный email"),
-    password: z.string().min(8, "Пароль минимум 8 символов"),
+    password: passwordSchema,
     confirmPassword: z.string(),
     name: z.string().min(2, "Имя минимум 2 символа"),
-    phone: z.string().min(10, "Укажите телефон").optional(),
+    phone: phoneSchema,
     acceptTerms: z.literal(true, {
       errorMap: () => ({ message: "Примите пользовательское соглашение и оферту" }),
     }),
@@ -45,14 +60,24 @@ export const placeBidSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().min(2, "Имя минимум 2 символа").optional(),
-  phone: z.string().min(10, "Укажите телефон").optional().nullable(),
+  phone: z
+    .string()
+    .nullable()
+    .optional()
+    .refine((v) => v == null || !String(v).trim() || isValidRuPhone(String(v)), {
+      message: "Телефон: +7 9XX XXX-XX-XX или 8 9XX XXX-XX-XX",
+    })
+    .transform((v) => {
+      if (v == null || !String(v).trim()) return null;
+      return normalizeRuPhone(String(v).trim());
+    }),
   emailNotifications: z.boolean().optional(),
 });
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Введите текущий пароль"),
-    newPassword: z.string().min(8, "Новый пароль минимум 8 символов"),
+    newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
