@@ -122,7 +122,7 @@ export function registerApiRoutes(app: Express) {
   api.patch("/admin/users/:id", wrapJson(adminUserById.PATCH));
   api.get("/admin/lots", wrapJson(adminLots.GET));
   api.get("/admin/lots/:id", wrapJson(adminLotById.GET));
-  api.patch("/admin/lots/:id", wrapJson(adminLotById.PATCH));
+  api.patch("/admin/lots/:id", wrapStream(adminLotById.PATCH));
   api.delete("/admin/lots/:id", wrapJson(adminLotById.DELETE));
   api.get("/admin/auctions", wrapJson(adminAuctions.GET));
   api.post("/admin/auctions/:id/end", wrapJson(adminAuctionEnd.POST));

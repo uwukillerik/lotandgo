@@ -5,9 +5,10 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Loader2, MessageSquare, Plus, Save, Trash2, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, MessageSquare, Save, Trash2, X } from "lucide-react";
 import { LOT_CATEGORIES } from "@shared/categories";
-import { getAuthHeaders } from "@/components/auth-provider";
+import { getAuthHeaders, getAuthUploadHeaders } from "@/components/auth-provider";
+import { ImageUploader } from "@/components/sell/image-uploader";
 import { AdminBadge, AdminBtn, AdminCard, AdminPageHeader } from "@/components/admin-ui";
 import {
   auctionStatusLabels,
@@ -101,7 +102,7 @@ export default function AdminLotDetailPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editCategory, setEditCategory] = useState("");
-  const [editImages, setEditImages] = useState<Array<{ id?: string; url: string }>>([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -109,28 +110,35 @@ export default function AdminLotDetailPage() {
     setEditTitle(data.title);
     setEditDescription(data.description);
     setEditCategory(data.category);
-    setEditImages(data.images.map((i) => ({ id: i.id, url: i.url })));
+    setNewImageFiles([]);
     setRemovedImageIds([]);
   }, [data?.id]);
 
+  const visibleImages = data?.images.filter((img) => !removedImageIds.includes(img.id)) ?? [];
+  const totalImagesAfterSave = visibleImages.length + newImageFiles.length;
+
   const saveLot = useMutation({
     mutationFn: async () => {
+      if (editTitle.trim().length < 3) throw new Error("Название минимум 3 символа");
+      if (editDescription.trim().length < 10) throw new Error("Описание минимум 10 символов");
+      if (totalImagesAfterSave > 5) throw new Error("Максимум 5 фото на лот");
+      if (totalImagesAfterSave === 0) throw new Error("Должно остаться хотя бы одно фото");
+
+      const formData = new FormData();
+      formData.append("title", editTitle.trim());
+      formData.append("description", editDescription.trim());
+      formData.append("category", editCategory);
+      if (removedImageIds.length) {
+        formData.append("removeImageIds", JSON.stringify(removedImageIds));
+      }
+      for (const file of newImageFiles) {
+        formData.append("images", file);
+      }
+
       const res = await fetch(`/api/admin/lots/${id}`, {
         method: "PATCH",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          title: editTitle.trim(),
-          description: editDescription.trim(),
-          category: editCategory,
-          images: editImages
-            .filter((i) => i.url.trim())
-            .map((img, index) => ({
-              id: img.id,
-              url: img.url.trim(),
-              sortOrder: index,
-            })),
-          removeImageIds: removedImageIds,
-        }),
+        headers: getAuthUploadHeaders(),
+        body: formData,
       });
       if (!res.ok) {
         const json = await res.json();
@@ -138,6 +146,8 @@ export default function AdminLotDetailPage() {
       }
     },
     onSuccess: () => {
+      setNewImageFiles([]);
+      setRemovedImageIds([]);
       qc.invalidateQueries({ queryKey: ["admin-lot", id] });
       qc.invalidateQueries({ queryKey: ["admin-lots"] });
       toast.success("Лот сохранён");
@@ -165,7 +175,7 @@ export default function AdminLotDetailPage() {
   }
 
   const lot = data;
-  const cover = lot.images[0]?.url;
+  const cover = visibleImages[0]?.url;
 
   return (
     <div className="space-y-6">
@@ -254,42 +264,36 @@ export default function AdminLotDetailPage() {
             </label>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-700">Фотографии (URL)</span>
-                <button
-                  type="button"
-                  onClick={() => setEditImages((imgs) => [...imgs, { url: "" }])}
-                  className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Добавить
-                </button>
-              </div>
-              {editImages.map((img, index) => (
-                <div key={img.id ?? `new-${index}`} className="flex gap-2">
-                  <input
-                    value={img.url}
-                    onChange={(e) =>
-                      setEditImages((imgs) =>
-                        imgs.map((item, i) => (i === index ? { ...item, url: e.target.value } : item)),
-                      )
-                    }
-                    placeholder="https://… или /uploads/файл.jpg"
-                    className="input-field min-w-0 flex-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (img.id) setRemovedImageIds((ids) => [...ids, img.id!]);
-                      setEditImages((imgs) => imgs.filter((_, i) => i !== index));
-                    }}
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100"
-                    aria-label="Удалить фото"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+              <span className="text-sm font-semibold text-slate-700">
+                Фотографии ({totalImagesAfterSave}/5)
+              </span>
+
+              {visibleImages.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {visibleImages.map((img) => (
+                    <div
+                      key={img.id}
+                      className="relative aspect-square overflow-hidden rounded-xl ring-1 ring-slate-200"
+                    >
+                      <Image src={img.url} alt="" fill className="object-cover" unoptimized />
+                      <button
+                        type="button"
+                        onClick={() => setRemovedImageIds((ids) => [...ids, img.id])}
+                        className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
+                        aria-label="Удалить фото"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              <ImageUploader
+                files={newImageFiles}
+                onChange={setNewImageFiles}
+                max={Math.max(0, 5 - visibleImages.length)}
+              />
             </div>
 
             <button

@@ -14,23 +14,21 @@ import {
 import { LOT_CATEGORIES } from "@shared/categories";
 import { requireAdmin, handleApiError } from "@/lib/auth-request";
 import { kopecksToRubles } from "@/lib/wallet-service";
+import { saveUploadedFiles } from "@/lib/upload";
 
-const patchSchema = z.object({
+const patchFieldsSchema = z.object({
   status: z.enum(["draft", "active", "ended", "sold"]).optional(),
   title: z.string().min(3).optional(),
   description: z.string().min(10).optional(),
   category: z.enum(LOT_CATEGORIES).optional(),
-  images: z
-    .array(
-      z.object({
-        id: z.string().uuid().optional(),
-        url: z.string().min(1, "Укажите URL"),
-        sortOrder: z.number().int().min(0).optional(),
-      }),
-    )
-    .optional(),
   removeImageIds: z.array(z.string().uuid()).optional(),
 });
+
+function fieldOrUndefined(value: FormDataEntryValue | null): string | undefined {
+  if (value == null) return undefined;
+  const s = String(value).trim();
+  return s || undefined;
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -148,15 +146,69 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     await requireAdmin(request);
     const { id } = await params;
-    const body = await request.json();
-    const parsed = patchSchema.safeParse(body);
-    if (!parsed.success) {
-      return Response.json({ error: "Ошибка валидации", details: parsed.error.flatten() }, { status: 400 });
+    const contentType = request.headers.get("content-type") ?? "";
+
+    let parsed: z.infer<typeof patchFieldsSchema>;
+    let newImageFiles: File[] = [];
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const removeRaw = formData.get("removeImageIds");
+      let removeImageIds: string[] | undefined;
+      if (removeRaw) {
+        try {
+          removeImageIds = JSON.parse(String(removeRaw));
+        } catch {
+          return Response.json({ error: "Некорректный removeImageIds" }, { status: 400 });
+        }
+      }
+
+      const fieldResult = patchFieldsSchema.safeParse({
+        status: fieldOrUndefined(formData.get("status")),
+        title: fieldOrUndefined(formData.get("title")),
+        description: fieldOrUndefined(formData.get("description")),
+        category: fieldOrUndefined(formData.get("category")),
+        removeImageIds,
+      });
+      if (!fieldResult.success) {
+        return Response.json(
+          { error: "Ошибка валидации", details: fieldResult.error.flatten() },
+          { status: 400 },
+        );
+      }
+      parsed = fieldResult.data;
+      newImageFiles = formData
+        .getAll("images")
+        .filter((f): f is File => f instanceof File && f.size > 0);
+    } else {
+      const body = await request.json();
+      const fieldResult = patchFieldsSchema.safeParse(body);
+      if (!fieldResult.success) {
+        return Response.json(
+          { error: "Ошибка валидации", details: fieldResult.error.flatten() },
+          { status: 400 },
+        );
+      }
+      parsed = fieldResult.data;
     }
 
-    const { status, title, description, category, images, removeImageIds } = parsed.data;
-    if (!status && !title && !description && !category && !images && !removeImageIds?.length) {
+    const { status, title, description, category, removeImageIds } = parsed;
+    if (!status && !title && !description && !category && !removeImageIds?.length && !newImageFiles.length) {
       return Response.json({ error: "Нет данных для обновления" }, { status: 400 });
+    }
+
+    const [existingLot] = await db.select({ id: lots.id }).from(lots).where(eq(lots.id, id));
+    if (!existingLot) return Response.json({ error: "Не найден" }, { status: 404 });
+
+    if (removeImageIds?.length || newImageFiles.length) {
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(lotImages)
+        .where(eq(lotImages.lotId, id));
+      const afterRemove = (count ?? 0) - (removeImageIds?.length ?? 0) + newImageFiles.length;
+      if (afterRemove > 5) {
+        return Response.json({ error: "Максимум 5 фото на лот" }, { status: 400 });
+      }
     }
 
     const lotUpdates: Partial<typeof lots.$inferInsert> = {};
@@ -166,11 +218,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (category) lotUpdates.category = category;
 
     if (Object.keys(lotUpdates).length > 0) {
-      const [lot] = await db.update(lots).set(lotUpdates).where(eq(lots.id, id)).returning();
-      if (!lot) return Response.json({ error: "Не найден" }, { status: 404 });
-    } else {
-      const [lot] = await db.select({ id: lots.id }).from(lots).where(eq(lots.id, id));
-      if (!lot) return Response.json({ error: "Не найден" }, { status: 404 });
+      await db.update(lots).set(lotUpdates).where(eq(lots.id, id));
     }
 
     if (removeImageIds?.length) {
@@ -179,18 +227,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       }
     }
 
-    if (images) {
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-        const sortOrder = img.sortOrder ?? i;
-        if (img.id) {
-          await db
-            .update(lotImages)
-            .set({ url: img.url, sortOrder })
-            .where(eq(lotImages.id, img.id));
-        } else {
-          await db.insert(lotImages).values({ lotId: id, url: img.url, sortOrder });
-        }
+    if (newImageFiles.length) {
+      const saved = await saveUploadedFiles(newImageFiles);
+      const existing = await db
+        .select({ sortOrder: lotImages.sortOrder })
+        .from(lotImages)
+        .where(eq(lotImages.lotId, id))
+        .orderBy(lotImages.sortOrder);
+      let nextOrder = existing.length > 0 ? Math.max(...existing.map((i) => i.sortOrder)) + 1 : 0;
+      for (const file of saved) {
+        await db.insert(lotImages).values({
+          lotId: id,
+          url: file.url,
+          sortOrder: nextOrder++,
+        });
       }
     }
 
