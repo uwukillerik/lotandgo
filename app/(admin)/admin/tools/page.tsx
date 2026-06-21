@@ -2,6 +2,7 @@
 
 import { AdminEmailPanel } from "@/components/admin-email-panel";
 import { AdminExportPanel } from "@/components/admin-export-panel";
+import { AdminApkPanel } from "@/components/admin-apk-panel";
 import { AdminPageHeader } from "@/components/admin-ui";
 
 export default function AdminToolsPage() {
@@ -15,6 +16,7 @@ export default function AdminToolsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminEmailPanel />
         <AdminExportPanel />
+        <AdminApkPanel />
       </div>
     </div>
   );

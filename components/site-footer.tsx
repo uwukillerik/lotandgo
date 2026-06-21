@@ -2,17 +2,15 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   LayoutGrid,
-  Download,
   Mail,
   Shield,
   FileText,
   Cookie,
   Scale,
-  Smartphone,
 } from "lucide-react";
 import { legalDocumentList } from "@/lib/legal-content";
 import { InstallAppButton } from "@/components/install-app-button";
-import { APK_DOWNLOAD_PATH, SUPPORT_EMAIL } from "@shared/site-url";
+import { SUPPORT_EMAIL } from "@shared/site-url";
 
 const legalIcons: Record<string, typeof Shield> = {
   privacy: Shield,
@@ -85,12 +83,8 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
               Добавьте Lot&Go на главный экран — ставки и уведомления в один тап.
             </p>
             <div className="mt-4">
-              <InstallAppButton variant="footer" layout="stack" showHints={false} />
+              <InstallAppButton variant="footer" layout="stack" />
             </div>
-            <a href={APK_DOWNLOAD_PATH} download className="footer-apk-note mt-3 inline-flex items-center gap-2">
-              <Smartphone className="h-3.5 w-3.5" />
-              <span>Android · WebView APK · ~5 МБ</span>
-            </a>
           </div>
 
           {/* Документы */}
@@ -112,12 +106,8 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-200/70 pt-6 sm:flex-row">
+        <div className="mt-10 border-t border-slate-200/70 pt-6 text-center sm:text-left">
           <p className="text-xs text-slate-500">© 2026 Lot&Go. Все права защищены.</p>
-          <a href={APK_DOWNLOAD_PATH} download className="footer-link !text-amber-700">
-            <Download className="h-4 w-4" />
-            Скачать APK для Android
-          </a>
         </div>
       </div>
     </footer>

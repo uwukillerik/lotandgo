@@ -35,7 +35,7 @@ async function start() {
     app.use(express.static(dist, { index: false }));
 
     app.use((req, res, next) => {
-      if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+      if (req.path.startsWith("/api") || req.path.startsWith("/uploads") || req.path.startsWith("/downloads")) {
         return next();
       }
       if (req.method !== "GET" && req.method !== "HEAD") {

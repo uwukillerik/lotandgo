@@ -54,6 +54,7 @@ import * as reviews from "@/app/api/reviews/route";
 import * as pushSubscribe from "@/app/api/push/subscribe/route";
 import * as favoritesRoute from "@/app/api/favorites/route";
 import * as publicStats from "@/app/api/stats/public/route";
+import * as appDownload from "@/app/api/app/download/route";
 
 export function registerApiRoutes(app: Express) {
   if (!fs.existsSync(uploadDir)) {
@@ -70,6 +71,7 @@ export function registerApiRoutes(app: Express) {
   api.use(cookieParser());
 
   api.get("/stats/public", wrapJson(publicStats.GET));
+  api.get("/app/download", wrapJson(appDownload.GET));
 
   api.get("/favorites", wrapJson(favoritesRoute.GET));
   api.post("/favorites", wrapJson(favoritesRoute.POST));

@@ -1,4 +1,5 @@
 import type { Express, Request, Response } from "express";
+import express from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { eq, desc } from "drizzle-orm";
@@ -8,6 +9,7 @@ import { SITE_URL } from "@shared/site-url";
 
 const spaDist = path.resolve(import.meta.dirname, "../dist/spa");
 const publicDir = path.resolve(import.meta.dirname, "../public");
+const downloadsDir = path.join(publicDir, "downloads");
 
 function serveSpaAsset(filename: string, mime: string) {
   return (_req: Request, res: Response) => {
@@ -21,6 +23,18 @@ function serveSpaAsset(filename: string, mime: string) {
 }
 
 export function registerPublicRoutes(app: Express) {
+  app.use(
+    "/downloads",
+    express.static(downloadsDir, {
+      setHeaders(res, filePath) {
+        if (filePath.endsWith(".apk")) {
+          res.setHeader("Content-Type", "application/vnd.android.package-archive");
+          res.setHeader("Content-Disposition", 'attachment; filename="lotgo.apk"');
+        }
+      },
+    }),
+  );
+
   app.get("/manifest.webmanifest", serveSpaAsset("manifest.webmanifest", "application/manifest+json"));
   app.get("/sw.js", serveSpaAsset("sw.js", "application/javascript"));
   app.get("/registerSW.js", serveSpaAsset("registerSW.js", "application/javascript"));

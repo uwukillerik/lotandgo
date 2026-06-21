@@ -33,6 +33,8 @@ export function InstallAppButton({
     useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [showIosHint, setShowIosHint] = useState(false);
+  const [apkAvailable, setApkAvailable] = useState<boolean | null>(null);
+  const [apkSizeMb, setApkSizeMb] = useState<number | null>(null);
 
   useEffect(() => {
     const standalone =
@@ -46,6 +48,16 @@ export function InstallAppButton({
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/app/download")
+      .then((r) => r.json())
+      .then((data) => {
+        setApkAvailable(Boolean(data.apk?.available));
+        setApkSizeMb(data.apk?.sizeMb ?? null);
+      })
+      .catch(() => setApkAvailable(false));
   }, []);
 
   const installPwa = useCallback(async () => {
@@ -99,14 +111,16 @@ export function InstallAppButton({
             {isFooter ? "Установить PWA" : "Установить приложение"}
           </button>
         )}
-        <a
-          href={APK_DOWNLOAD_PATH}
-          download="lotgo.apk"
-          className={cn(apkClass, "w-full sm:w-auto")}
-        >
-          <Download className="h-5 w-5 shrink-0" />
-          Скачать APK
-        </a>
+        {apkAvailable && (
+          <a
+            href={APK_DOWNLOAD_PATH}
+            download="lotgo.apk"
+            className={cn(apkClass, "w-full sm:w-auto")}
+          >
+            <Download className="h-5 w-5 shrink-0" />
+            Скачать APK{apkSizeMb ? ` · ${apkSizeMb} МБ` : ""}
+          </a>
+        )}
       </div>
 
       {showHints && showIosHint && (
@@ -116,9 +130,15 @@ export function InstallAppButton({
         </p>
       )}
 
-      {showHints && !canPwa && isAndroid() && (
+      {showHints && !canPwa && isAndroid() && apkAvailable && (
         <p className="text-sm text-slate-600">
           Скачайте APK и установите Lot&Go на телефон — торги всегда под рукой.
+        </p>
+      )}
+
+      {showHints && apkAvailable === false && isAndroid() && (
+        <p className="text-sm text-slate-500">
+          APK временно недоступен — используйте «Установить PWA» в Chrome или обратитесь к администратору.
         </p>
       )}
     </div>

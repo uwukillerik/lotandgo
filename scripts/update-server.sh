@@ -35,6 +35,11 @@ for i in 1 2 3 4 5; do
   if curl -sf -o /dev/null -I http://127.0.0.1:8081; then
     echo "OK: http://127.0.0.1:8081"
     curl -I http://127.0.0.1:8081 | head -n 1
+    if [[ -f "$ROOT/public/downloads/lotgo.apk" ]]; then
+      echo "OK: APK $(ls -lh "$ROOT/public/downloads/lotgo.apk" | awk '{print $5}')"
+    else
+      echo "WARN: APK нет — соберите локально (pnpm build:apk) и загрузите (pnpm upload:apk)"
+    fi
     exit 0
   fi
   echo "ожидание... ($i/5)"

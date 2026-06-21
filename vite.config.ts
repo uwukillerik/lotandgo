@@ -22,7 +22,14 @@ export default defineConfig({
       injectRegister: "inline",
       filename: "sw.js",
       manifestFilename: "manifest.webmanifest",
-      includeAssets: ["favicon.ico", "icons/icon-192.png", "icons/icon-512.png"],
+      includeAssets: [
+        "favicon.ico",
+        "icons/favicon-16.png",
+        "icons/favicon-32.png",
+        "icons/apple-touch-icon.png",
+        "icons/icon-192.png",
+        "icons/icon-512.png",
+      ],
       manifest: {
         name: "Lot&Go — Аукционы",
         short_name: "Lot&Go",
