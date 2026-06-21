@@ -5,7 +5,6 @@ import {
   SlidersHorizontal,
   X,
   Check,
-  Check,
   Tag,
   ArrowUpDown,
   Radio,
