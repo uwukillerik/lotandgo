@@ -25,10 +25,13 @@ import {
   Trophy,
   Activity,
   Sparkles,
+  Heart,
 } from "lucide-react";
 import { InnerHeader } from "@/components/site-header";
 import { useAuth, getAuthHeaders, getAuthUploadHeaders } from "@/components/auth-provider";
 import { formatPrice, cn } from "@/lib/utils";
+import { isAuctionWinner } from "@shared/auction-helpers";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { toast } from "sonner";
 
 const MAX_AVATAR_MB = 2;
@@ -191,13 +194,15 @@ export default function ProfilePage() {
 
   const initial = user.name.charAt(0).toUpperCase();
   const activeBids = bidsData?.filter((b) => b.auctionStatus === "active").length ?? 0;
-  const wins = bidsData?.filter((b) => b.isWinner).length ?? 0;
+  const wins = bidsData?.filter((b) => isAuctionWinner(b.auctionStatus, b.isWinner)).length ?? 0;
 
   return (
     <div className="page-bg min-h-screen">
       <InnerHeader backHref="/catalog" backLabel="Каталог" title="Профиль" right={null} />
 
       <main className="page-shell space-y-5 sm:space-y-6">
+        <PwaInstallBanner />
+
         {/* Шапка профиля */}
         <div className="surface-card overflow-hidden">
           <div className="relative bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 px-5 py-8 sm:px-8 sm:py-10">
@@ -325,11 +330,12 @@ export default function ProfilePage() {
         </div>
 
         {/* Быстрые действия */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-3">
           <QuickAction href="/sell" icon={Package} label="Продать" />
           <QuickAction href="/catalog" icon={Gavel} label="Каталог" />
           <QuickAction href="/profile/bids" icon={TrendingUp} label="Ставки" />
           <QuickAction href="/messages" icon={MessageCircle} label="Сообщения" />
+          <QuickAction href="/profile/favorites" icon={Heart} label="Избранное" />
           <QuickAction href="/notifications" icon={Bell} label="Уведомления" />
         </div>
 
@@ -373,6 +379,7 @@ export default function ProfilePage() {
         {/* Меню */}
         <div className="space-y-2.5">
           <p className="section-eyebrow px-1">Аккаунт</p>
+          <MenuLink href="/profile/favorites" icon={Heart} title="Избранное" desc="Сохранённые лоты для отслеживания" />
           <MenuLink href="/profile/lots" icon={Package} title="Мои лоты" desc="Ваши выставленные лоты" />
           <MenuLink href="/profile/promote" icon={Sparkles} title="Продвижение" desc="Поднять лот в топ каталога" />
           <MenuLink href="/profile/settings" icon={Settings} title="Настройки" desc="Смена пароля и безопасность" />

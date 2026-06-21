@@ -5,10 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { InnerHeader } from "@/components/site-header";
 import { getAuthHeaders } from "@/components/auth-provider";
 import { formatPrice } from "@/lib/utils";
+import { isAuctionWinner, auctionStatusLabel } from "@shared/auction-helpers";
+import { ErrorState, EmptyState } from "@/components/page-states";
 import { Loader2 } from "lucide-react";
 
 export default function ProfileBidsPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["my-bids"],
     queryFn: async () => {
       const res = await fetch("/api/bids/mine", { headers: getAuthHeaders() });
@@ -25,7 +27,7 @@ export default function ProfileBidsPage() {
   });
 
   return (
-    <div className="min-h-screen">
+    <div className="page-bg min-h-screen">
       <InnerHeader backHref="/profile" backLabel="Профиль" title="Мои ставки" right={null} />
       <main className="page-shell">
         {isLoading && (
@@ -33,14 +35,20 @@ export default function ProfileBidsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
           </div>
         )}
-        {!isLoading && (!data || data.length === 0) && (
-          <div className="surface-card py-16 text-center">
-            <p className="font-semibold text-slate-700">Ставок пока нет</p>
-            <Link href="/catalog" className="btn-primary mt-4 inline-flex">
-              Перейти в каталог
-            </Link>
-          </div>
+
+        {isError && <ErrorState onRetry={() => refetch()} />}
+
+        {!isLoading && !isError && (!data || data.length === 0) && (
+          <EmptyState
+            title="Ставок пока нет"
+            action={
+              <Link href="/catalog" className="btn-primary inline-flex">
+                Перейти в каталог
+              </Link>
+            }
+          />
         )}
+
         {data && data.length > 0 && (
           <ul className="space-y-3">
             {data.map((bid) => (
@@ -52,8 +60,8 @@ export default function ProfileBidsPage() {
                   <p className="font-bold text-slate-900">{bid.auctionTitle}</p>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                     <span>Ваша ставка: {formatPrice(bid.amount)}</span>
-                    <span>{bid.auctionStatus === "active" ? "● Live" : bid.auctionStatus}</span>
-                    {bid.isWinner && (
+                    <span>{auctionStatusLabel(bid.auctionStatus)}</span>
+                    {isAuctionWinner(bid.auctionStatus, bid.isWinner) && (
                       <span className="font-bold text-emerald-600">Победа</span>
                     )}
                   </div>

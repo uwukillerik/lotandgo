@@ -1,16 +1,30 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAdmin, handleApiError } from "@/lib/auth-request";
-import { sendMail, buildTestEmailHtml, buildWelcomeEmailHtml } from "@/lib/email";
+import {
+  sendMail,
+  buildTestEmailHtml,
+  buildWelcomeEmailHtml,
+  isSmtpConfigured,
+} from "@/lib/email";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 const schema = z.object({
-  to: z.string().email(),
+  to: z
+    .string({ required_error: "Укажите email получателя" })
+    .trim()
+    .min(1, "Укажите email получателя")
+    .email("Некорректный email"),
   template: z.enum(["test", "welcome"]).default("test"),
   userName: z.string().optional(),
 });
+
+function validationError(error: z.ZodError) {
+  const first = error.errors[0]?.message ?? "Некорректные данные";
+  return Response.json({ error: first, details: error.flatten().fieldErrors }, { status: 400 });
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +32,14 @@ export async function GET(request: NextRequest) {
     const user = process.env.SMTP_USER ?? "info@lotandgo.ru";
     const host = process.env.SMTP_HOST ?? "mail.hosting.reg.ru";
     const port = process.env.SMTP_PORT ?? "587";
-    return Response.json({ ok: true, host, port, user, from: process.env.SMTP_FROM ?? user });
+    return Response.json({
+      ok: true,
+      host,
+      port,
+      user,
+      from: process.env.SMTP_FROM ?? user,
+      configured: isSmtpConfigured(),
+    });
   } catch (error) {
     return handleApiError(error);
   }
@@ -27,10 +48,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin(request);
-    const body = await request.json();
+
+    if (!isSmtpConfigured()) {
+      return Response.json(
+        { error: "SMTP не настроен: задайте SMTP_USER и SMTP_PASS в .env" },
+        { status: 503 },
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ error: "Некорректное тело запроса (ожидается JSON)" }, { status: 400 });
+    }
+
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return Response.json({ error: "Некорректные данные" }, { status: 400 });
+      return validationError(parsed.error);
     }
 
     const { to, template, userName } = parsed.data;
@@ -59,6 +94,14 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     await requireAdmin(request);
+
+    if (!isSmtpConfigured()) {
+      return Response.json(
+        { error: "SMTP не настроен: задайте SMTP_USER и SMTP_PASS в .env" },
+        { status: 503 },
+      );
+    }
+
     const body = await request.json();
     const userId = z.string().uuid().parse(body.userId);
 

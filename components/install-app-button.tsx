@@ -20,9 +20,13 @@ function isIOS(): boolean {
 
 export function InstallAppButton({
   variant = "primary",
+  layout = "row",
+  showHints = true,
   className,
 }: {
-  variant?: "primary" | "ghost";
+  variant?: "primary" | "secondary" | "footer";
+  layout?: "row" | "stack";
+  showHints?: boolean;
   className?: string;
 }) {
   const [installPrompt, setInstallPrompt] =
@@ -58,45 +62,63 @@ export function InstallAppButton({
 
   if (installed) return null;
 
-  const base =
-    variant === "primary"
-      ? "btn-primary"
-      : "inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 px-7 py-4 font-bold text-white backdrop-blur-sm transition-all hover:bg-white/10";
-
   const canPwa = !!installPrompt || isIOS();
+  const isFooter = variant === "footer";
+
+  const pwaClass =
+    variant === "footer"
+      ? "btn-footer-pwa"
+      : variant === "secondary"
+        ? "btn-secondary"
+        : "btn-primary";
+
+  const apkClass =
+    variant === "footer"
+      ? "btn-footer-apk"
+      : "btn-apk";
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+    <div
+      className={cn(
+        layout === "stack" ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 sm:flex-row sm:flex-wrap",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          layout === "stack" ? "flex flex-col gap-2.5" : "flex flex-col gap-2.5 sm:flex-row sm:items-center",
+        )}
+      >
         {canPwa && (
-          <button type="button" onClick={installPwa} className={cn(base, "w-full sm:w-auto")}>
-            <Smartphone className="h-5 w-5" />
-            Установить приложение
+          <button
+            type="button"
+            onClick={installPwa}
+            className={cn(pwaClass, "w-full sm:w-auto")}
+          >
+            <Smartphone className="h-5 w-5 shrink-0" />
+            {isFooter ? "Установить PWA" : "Установить приложение"}
           </button>
         )}
         <a
           href={APK_DOWNLOAD_PATH}
           download="lotgo.apk"
-          className={cn(
-            variant === "primary" ? "btn-ghost" : base,
-            "w-full sm:w-auto",
-          )}
+          className={cn(apkClass, "w-full sm:w-auto")}
         >
-          <Download className="h-5 w-5" />
-          Скачать APK (Android)
+          <Download className="h-5 w-5 shrink-0" />
+          Скачать APK
         </a>
       </div>
 
-      {showIosHint && (
+      {showHints && showIosHint && (
         <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <Share className="mt-0.5 h-4 w-4 shrink-0" />
           На iPhone: «Поделиться» → «На экран Домой» в Safari.
         </p>
       )}
 
-      {!canPwa && !isAndroid() && (
-        <p className="text-xs text-slate-500">
-          PWA: откройте сайт в Chrome и нажмите «Установить». Или скачайте APK на Android.
+      {showHints && !canPwa && isAndroid() && (
+        <p className="text-sm text-slate-600">
+          Скачайте APK и установите Lot&Go на телефон — торги всегда под рукой.
         </p>
       )}
     </div>

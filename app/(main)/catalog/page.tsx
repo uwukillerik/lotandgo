@@ -1,14 +1,16 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { SlidersHorizontal, Flame, Plus } from "lucide-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { SlidersHorizontal, Flame, Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { InnerHeader, HeaderSellButton } from "@/components/site-header";
+import { SiteHeader } from "@/components/site-header";
 import { CatalogFiltersPanel } from "@/components/catalog-filters";
 import { AuctionCard } from "@/components/auction-card";
 import { PromotedShowcase } from "@/components/promoted-showcase";
 import { AuctionCardSkeleton } from "@/components/skeleton";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
+import { ErrorState } from "@/components/page-states";
 import { getAuthHeaders, useAuth } from "@/components/auth-provider";
 import {
   DEFAULT_CATALOG_FILTERS,
@@ -17,8 +19,15 @@ import {
 import type { AuctionListItem } from "@shared/api";
 import { cn } from "@/lib/utils";
 
-async function fetchAuctions(filters: CatalogFilters) {
-  const params = new URLSearchParams({ status: filters.status, limit: "50", sort: filters.sort });
+const PAGE_SIZE = 24;
+
+async function fetchAuctions(filters: CatalogFilters, page: number) {
+  const params = new URLSearchParams({
+    status: filters.status,
+    limit: String(PAGE_SIZE),
+    sort: filters.sort,
+    page: String(page),
+  });
   if (filters.search) params.set("search", filters.search);
   if (filters.category !== "Все") params.set("category", filters.category);
   if (filters.minPrice) params.set("minPrice", filters.minPrice);
@@ -33,25 +42,34 @@ export default function CatalogPage() {
   const [filters, setFilters] = useState<CatalogFilters>(DEFAULT_CATALOG_FILTERS);
   const deferredFilters = useDeferredValue(filters);
 
-  const { data: auctions = [], isLoading, isFetching, error } = useQuery({
+  const {
+    data,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["auctions", deferredFilters],
-    queryFn: () => fetchAuctions(deferredFilters),
-    placeholderData: (prev) => prev,
+    queryFn: ({ pageParam }) => fetchAuctions(deferredFilters, pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
   });
 
+  const auctions = data?.pages.flat() ?? [];
   const showSkeleton = isLoading && auctions.length === 0;
   const liveCount = auctions.filter((a) => a.status === "active").length;
 
   return (
     <div className="page-bg min-h-screen">
-      <InnerHeader
-        backHref="/"
-        backLabel="Главная"
-        title="Аукционы"
-        right={<HeaderSellButton />}
-      />
+      <SiteHeader active="catalog" />
 
       <main className="page-shell">
+        <PwaInstallBanner className="mb-6" />
+
         <div className="catalog-hero mb-6">
           <div className="absolute right-0 top-0 h-32 w-32 bg-[radial-gradient(circle,rgba(251,191,36,0.12),transparent_70%)]" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -82,16 +100,11 @@ export default function CatalogPage() {
 
         <CatalogFiltersPanel filters={filters} onChange={setFilters} />
 
-        {!error && auctions.length > 0 && <PromotedShowcase auctions={auctions} />}
+        {isError && <ErrorState onRetry={() => refetch()} className="mt-6" />}
 
-        {error && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-10 text-center">
-            <p className="font-semibold text-rose-800">Не удалось загрузить</p>
-            <p className="mt-1 text-sm text-rose-600">Проверьте подключение к базе данных</p>
-          </div>
-        )}
+        {!isError && auctions.length > 0 && <PromotedShowcase auctions={auctions} />}
 
-        {!error && showSkeleton && (
+        {!isError && showSkeleton && (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <AuctionCardSkeleton key={i} />
@@ -99,7 +112,7 @@ export default function CatalogPage() {
           </div>
         )}
 
-        {!error && !showSkeleton && auctions.length === 0 && (
+        {!isError && !showSkeleton && auctions.length === 0 && (
           <div className="surface-card flex flex-col items-center border-dashed py-16 text-center">
             <SlidersHorizontal className="mb-3 h-10 w-10 text-slate-300" />
             <p className="font-semibold text-slate-700">Ничего не найдено</p>
@@ -107,17 +120,36 @@ export default function CatalogPage() {
           </div>
         )}
 
-        {!error && auctions.length > 0 && (
-          <div
-            className={cn(
-              "grid grid-cols-2 gap-3 transition-opacity sm:gap-4 lg:grid-cols-3 xl:grid-cols-4",
-              isFetching && !isLoading && "opacity-60",
+        {!isError && auctions.length > 0 && (
+          <>
+            <div
+              className={cn(
+                "grid grid-cols-2 gap-3 transition-opacity sm:gap-4 lg:grid-cols-3 xl:grid-cols-4",
+                isFetching && !isLoading && "opacity-60",
+              )}
+            >
+              {auctions.map((auction) => (
+                <AuctionCard key={auction.id} auction={auction} />
+              ))}
+            </div>
+
+            {hasNextPage && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="btn-ghost inline-flex min-w-[12rem] justify-center"
+                >
+                  {isFetchingNextPage ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    "Показать ещё"
+                  )}
+                </button>
+              </div>
             )}
-          >
-            {auctions.map((auction) => (
-              <AuctionCard key={auction.id} auction={auction} />
-            ))}
-          </div>
+          </>
         )}
       </main>
     </div>

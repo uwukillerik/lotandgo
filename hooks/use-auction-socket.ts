@@ -43,6 +43,8 @@ export function useAuctionSocket(auctionId: string | undefined, userId?: string 
       auctionId: string;
       bid: Bid;
       currentPrice: number;
+      endsAt?: string;
+      extended?: boolean;
     }) => {
       if (payload.auctionId !== auctionId) return;
 
@@ -55,8 +57,15 @@ export function useAuctionSocket(auctionId: string | undefined, userId?: string 
           currentPrice: payload.currentPrice,
           bidsCount: exists ? current.bidsCount : current.bidsCount + 1,
           bids,
+          ...(payload.endsAt ? { endsAt: payload.endsAt } : {}),
         };
       });
+
+      if (payload.extended) {
+        toast.info("Торги продлены на 2 минуты", {
+          description: "Anti-snipe: ставка в последние минуты продлевает аукцион",
+        });
+      }
 
       qc.invalidateQueries({ queryKey: ["auctions"] });
 

@@ -30,6 +30,8 @@ import AdminLotsPage from "@/app/(admin)/admin/lots/page";
 import AdminLotDetailPage from "@/app/(admin)/admin/lots/[id]/page";
 import AdminAuctionsPage from "@/app/(admin)/admin/auctions/page";
 import AdminPaymentsPage from "@/app/(admin)/admin/payments/page";
+import ProfileFavoritesPage from "@/app/(app)/profile/favorites/page";
+import NotFoundPage from "@/app/not-found";
 
 function AdminLayout() {
   return (
@@ -66,6 +68,7 @@ holder.__lotgoRoot.render(
           <Route path="/profile/payments" element={<ProfilePaymentsPage />} />
           <Route path="/profile/wallet" element={<ProfileWalletPage />} />
           <Route path="/profile/promote" element={<ProfilePromotePage />} />
+          <Route path="/profile/favorites" element={<ProfileFavoritesPage />} />
           <Route path="/sell" element={<SellPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/messages" element={<MessagesPage />} />
@@ -80,6 +83,7 @@ holder.__lotgoRoot.render(
           <Route path="auctions" element={<AdminAuctionsPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   </Providers>,

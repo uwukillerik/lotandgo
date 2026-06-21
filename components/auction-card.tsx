@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { AuctionImage } from "@/components/auction-image";
 import { PriceDisplay } from "@/components/price-display";
+import { FavoriteButton } from "@/components/favorite-button";
 import { Gavel, Images } from "lucide-react";
 import type { AuctionListItem } from "@shared/api";
 import { Countdown } from "./countdown";
@@ -23,7 +26,7 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
     <Link
       href={`/auction/${auction.id}`}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-10px_rgba(15,23,42,0.14)] active:scale-[0.99]",
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-[0_4px_20px_-6px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-10px_rgba(15,23,42,0.14)] active:scale-[0.99]",
         promotionCardClass(tier),
         isPremium && "sm:col-span-2 lg:row-span-1",
       )}
@@ -58,6 +61,10 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
             {status.label}
           </span>
           {tier && <PromotionBadge tier={tier} />}
+        </div>
+
+        <div className="absolute right-2 top-2 z-10">
+          <FavoriteButton auctionId={auction.id} size="sm" />
         </div>
 
         {auction.imageCount && auction.imageCount > 1 && (

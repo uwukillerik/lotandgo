@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { InnerHeader } from "@/components/site-header";
@@ -29,6 +30,10 @@ type MyLot = {
 
 export default function ProfilePromotePage() {
   const qc = useQueryClient();
+  const [confirmPlan, setConfirmPlan] = useState<{
+    lotId: string;
+    plan: Plan;
+  } | null>(null);
   const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ["promotion-plans"],
     queryFn: async () => {
@@ -67,6 +72,7 @@ export default function ProfilePromotePage() {
       return data;
     },
     onSuccess: () => {
+      setConfirmPlan(null);
       qc.invalidateQueries({ queryKey: ["my-lots"] });
       qc.invalidateQueries({ queryKey: ["wallet"] });
       qc.invalidateQueries({ queryKey: ["auctions"] });
@@ -80,7 +86,7 @@ export default function ProfilePromotePage() {
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="page-bg min-h-screen">
       <InnerHeader backHref="/profile" backLabel="Профиль" title="Продвижение лотов" right={null} />
 
       <main className="page-shell space-y-8">
@@ -196,16 +202,7 @@ export default function ProfilePromotePage() {
                       key={plan.tier}
                       type="button"
                       disabled={promote.isPending}
-                      onClick={() => {
-                        if (
-                          !confirm(
-                            `Подключить «${plan.name}» за ${formatPrice(plan.priceRubles)} на ${plan.days} дн.?`,
-                          )
-                        ) {
-                          return;
-                        }
-                        promote.mutate({ lotId: lot.id, tier: plan.tier });
-                      }}
+                      onClick={() => setConfirmPlan({ lotId: lot.id, plan })}
                       className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
                     >
                       {plan.name} · {formatPrice(plan.priceRubles)}
@@ -217,6 +214,37 @@ export default function ProfilePromotePage() {
           </ul>
         </section>
       </main>
+
+      {confirmPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="surface-card w-full max-w-sm p-5">
+            <h3 className="font-bold text-slate-900">Подтвердите продвижение</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Подключить «{confirmPlan.plan.name}» за {formatPrice(confirmPlan.plan.priceRubles)} на{" "}
+              {confirmPlan.plan.days} дн.?
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                className="btn-ghost flex-1"
+                onClick={() => setConfirmPlan(null)}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn-primary flex-1"
+                disabled={promote.isPending}
+                onClick={() =>
+                  promote.mutate({ lotId: confirmPlan.lotId, tier: confirmPlan.plan.tier })
+                }
+              >
+                {promote.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Оплатить"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

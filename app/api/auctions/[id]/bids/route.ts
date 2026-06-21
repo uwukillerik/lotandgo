@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { placeBidSchema } from "@shared/schemas";
 import { placeBid } from "@/lib/services/auctionEngine";
+import { processAutoBids } from "@/lib/services/autoBidService";
 import { requireUserId, handleApiError } from "@/lib/auth-request";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     const result = await placeBid(auctionId, userId, parsed.data.amount);
+    await processAutoBids(auctionId);
     return Response.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);

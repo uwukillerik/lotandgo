@@ -49,6 +49,16 @@ export default function NotificationsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
+  const markRead = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
   const unread = data?.filter((n) => !n.read).length ?? 0;
 
   return (
@@ -94,6 +104,9 @@ export default function NotificationsPage() {
               <li key={n.id}>
                 <Link
                   href={`/auction/${n.auctionId}`}
+                  onClick={() => {
+                    if (!n.read) markRead.mutate(n.id);
+                  }}
                   className={cn(
                     "surface-card-interactive flex gap-3 p-3.5 sm:gap-4 sm:p-4",
                     !n.read && "border-amber-300/80 bg-amber-50/40 ring-1 ring-amber-100",

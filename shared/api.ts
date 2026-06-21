@@ -10,6 +10,7 @@ export interface UserPublic {
   role: UserRole;
   avatarUrl: string | null;
   paymentVerified: boolean;
+  emailNotifications: boolean;
   createdAt: string;
 }
 
@@ -87,6 +88,10 @@ export interface AuctionDetail extends AuctionListItem {
   isWinner: boolean;
   isSeller: boolean;
   canChat: boolean;
+  sellerAvatarUrl?: string | null;
+  sellerEndedLots?: number;
+  sellerRating?: number;
+  sellerReviewCount?: number;
 }
 
 export interface Notification {

@@ -25,8 +25,9 @@ export function toPublicUser(user: UserRow): UserPublic {
     phone: user.phone,
     role: user.role,
     avatarUrl: user.avatarUrl ?? null,
-    paymentVerified: user.paymentVerifiedAt != null,
-    createdAt: user.createdAt.toISOString(),
+  paymentVerified: user.paymentVerifiedAt != null,
+  emailNotifications: user.emailNotifications ?? true,
+  createdAt: user.createdAt.toISOString(),
   };
 }
 

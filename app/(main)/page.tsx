@@ -1,8 +1,14 @@
 import { InstallAppButton } from "@/components/install-app-button";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { PageMeta } from "@/components/page-meta";
 import { SiteFooter } from "@/components/site-footer";
-import { HeroLotPreview } from "@/components/hero-lot-preview";
+import {
+  HomePublicStats,
+  HomeLiveAuctions,
+  HomeCategoryChips,
+  HomeHeroFeatured,
+} from "@/components/home-live-sections";
 import {
   Gavel,
   Shield,
@@ -13,9 +19,7 @@ import {
   Search,
   Trophy,
   HandCoins,
-  Clock,
-  Percent,
-  Layers,
+  Smartphone,
 } from "lucide-react";
 
 const features = [
@@ -27,12 +31,12 @@ const features = [
   {
     icon: Gavel,
     title: "Честные торги",
-    desc: "Таймер, шаг и стартовая цена — всё прозрачно с первой секунды.",
+    desc: "Таймер, шаг и anti-snipe — торги продлеваются при ставке в последние минуты.",
   },
   {
     icon: Bell,
     title: "Уведомления",
-    desc: "Узнайте о перебитой ставке и завершении аукциона вовремя.",
+    desc: "Push в приложении и email при перебитой ставке и победе.",
   },
   {
     icon: Shield,
@@ -62,95 +66,85 @@ const steps = [
   },
 ];
 
-const stats = [
-  { icon: Layers, value: "500+", label: "категорий лотов" },
-  { icon: Clock, value: "Live", label: "торги 24/7" },
-  { icon: Percent, value: "0%", label: "скрытых комиссий" },
-];
-
 export default function HomePage() {
   return (
-    <div className="page-bg min-h-dvh">
+    <div className="page-bg flex min-h-dvh flex-col">
+      <PageMeta title="Lot&Go — Аукционы частной собственности" />
       <SiteHeader active="home" />
 
-      <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_70%_40%,rgba(251,191,36,0.09),transparent)]" />
-
-          <div className="page-shell relative !pb-12 !pt-10 sm:!pb-16 sm:!pt-14 lg:!pt-20">
-            <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-              <div className="space-y-6 sm:space-y-8">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/80 px-4 py-2 text-xs font-bold uppercase tracking-wider text-amber-700 shadow-sm backdrop-blur">
+      <main className="flex-1">
+        <section className="hero-section">
+          <div className="hero-section-bg" aria-hidden />
+          <div className="page-shell relative !pb-12 !pt-8 sm:!pb-16 sm:!pt-10 lg:!pt-12">
+            <div className="hero-grid">
+              <div className="hero-copy space-y-6 sm:space-y-7">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/90 px-4 py-2 text-xs font-bold uppercase tracking-wider text-amber-700 shadow-sm backdrop-blur">
                   <Sparkles className="h-3.5 w-3.5" />
                   Аукционы частной собственности
                 </div>
 
                 <div>
-                  <h1 className="display-heading text-[1.85rem] leading-[1.1] sm:text-4xl lg:text-5xl">
+                  <h1 className="display-heading text-[1.85rem] leading-[1.08] sm:text-4xl lg:text-[2.75rem]">
                     Покупайте редкие вещи на{" "}
                     <span className="gradient-text">живых торгах</span>
                   </h1>
                   <div className="gold-line mt-4" />
                 </div>
 
-                <p className="max-w-md text-base leading-relaxed text-slate-600 sm:text-lg">
+                <p className="max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg">
                   Антиквариат, коллекции, украшения — выставляйте лоты и побеждайте честно на Lot&Go.
                 </p>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-                  <Link href="/catalog" className="btn-primary w-full justify-center py-3.5 text-base sm:w-auto">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link
+                    href="/catalog"
+                    className="btn-primary w-full justify-center py-3.5 text-base sm:w-auto"
+                  >
                     Смотреть аукционы
                     <ArrowRight className="h-5 w-5" />
                   </Link>
-                  <InstallAppButton variant="ghost" className="w-full sm:w-auto" />
-                  <Link href="/auth" className="btn-ghost w-full justify-center py-3.5 text-base sm:w-auto">
+                  <Link
+                    href="/auth"
+                    className="btn-ghost w-full justify-center py-3.5 text-base sm:w-auto"
+                  >
                     Создать аккаунт
                   </Link>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {["Мебель", "Украшения", "Живопись", "Антиквариат", "Коллекции"].map((cat) => (
-                    <span
-                      key={cat}
-                      className="rounded-full border border-slate-200/80 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-slate-600 shadow-sm backdrop-blur transition hover:border-amber-200 hover:bg-amber-50/50"
-                    >
-                      {cat}
+                <div className="hero-trust-row">
+                  {["Live-ставки", "Anti-snipe", "Прозрачный шаг"].map((tag) => (
+                    <span key={tag} className="hero-trust-chip">
+                      {tag}
                     </span>
                   ))}
                 </div>
-              </div>
 
-              <div className="flex justify-center lg:justify-end">
-                <HeroLotPreview />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Статистика */}
-        <section className="relative z-10 -mt-4 sm:-mt-6">
-          <div className="page-shell !py-0">
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              {stats.map(({ icon: Icon, value, label }) => (
-                <div
-                  key={label}
-                  className="surface-card flex flex-col items-center gap-2 p-4 text-center sm:p-5"
-                >
-                  <span className="icon-ring !rounded-xl !p-2.5">
-                    <Icon className="h-4 w-4" strokeWidth={2} />
-                  </span>
-                  <p className="text-xl font-extrabold text-slate-900 sm:text-2xl">{value}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs">
-                    {label}
-                  </p>
+                <div className="surface-card !rounded-2xl p-4 sm:p-5">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="icon-ring !rounded-lg !p-2">
+                      <Smartphone className="h-4 w-4" />
+                    </span>
+                    <p className="text-sm font-bold text-slate-900">Lot&Go на телефоне</p>
+                  </div>
+                  <InstallAppButton variant="secondary" layout="row" showHints={false} />
                 </div>
-              ))}
+
+                <HomeCategoryChips />
+              </div>
+
+              <div className="hero-showcase-col">
+                <HomeHeroFeatured />
+              </div>
+            </div>
+
+            <div className="mt-8 lg:mt-10">
+              <HomePublicStats />
             </div>
           </div>
         </section>
 
-        {/* Как это работает */}
+        <HomeLiveAuctions />
+
         <section className="py-14 sm:py-20">
           <div className="page-shell !py-0">
             <div className="mb-10 text-center sm:mb-12">
@@ -158,16 +152,14 @@ export default function HomePage() {
               <h2 className="display-heading mt-2 text-2xl sm:text-3xl">Три шага до победы</h2>
             </div>
 
-            <div className="relative grid gap-4 sm:grid-cols-3 sm:gap-5">
-              <div className="absolute left-[16.67%] right-[16.67%] top-10 hidden h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent sm:block" />
-
+            <div className="steps-grid">
               {steps.map(({ icon: Icon, step, title, desc }) => (
-                <div key={step} className="surface-card-interactive relative p-5 sm:p-6">
-                  <div className="mb-4 flex items-center justify-between">
+                <div key={step} className="step-card">
+                  <div className="step-card-top">
                     <span className="icon-ring">
                       <Icon className="h-5 w-5" strokeWidth={2} />
                     </span>
-                    <span className="text-3xl font-black text-slate-100">{step}</span>
+                    <span className="step-card-number">{step}</span>
                   </div>
                   <h3 className="font-bold text-slate-900">{title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-500">{desc}</p>
@@ -177,7 +169,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Преимущества */}
         <section className="pb-14 sm:pb-20">
           <div className="page-shell !py-0">
             <div className="mb-10 text-center sm:mb-12">
@@ -199,7 +190,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* CTA */}
         <section className="pb-14 sm:pb-20">
           <div className="page-shell !py-0">
             <div className="cta-warm">
@@ -208,18 +198,26 @@ export default function HomePage() {
                 <h2 className="display-heading mt-2 text-2xl sm:text-3xl">
                   Готовы к первой ставке?
                 </h2>
-                <p className="mx-auto mt-3 max-w-sm text-sm text-slate-600 sm:text-base">
+                <p className="mx-auto mt-3 max-w-md text-sm text-slate-600 sm:text-base">
                   Бесплатная регистрация за минуту — без скрытых комиссий
                 </p>
                 <div className="mt-8 flex flex-col items-center gap-4">
-                  <InstallAppButton variant="primary" className="items-center justify-center" />
-                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                  <Link href="/catalog" className="btn-primary w-full px-10 py-3.5 text-base sm:w-auto">
-                    Открыть каталог
-                  </Link>
-                  <Link href="/auth" className="btn-ghost w-full px-8 py-3.5 text-base sm:w-auto">
-                    Регистрация
-                  </Link>
+                  <div className="flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
+                    <Link
+                      href="/catalog"
+                      className="btn-primary w-full justify-center px-10 py-3.5 text-base sm:w-auto"
+                    >
+                      Открыть каталог
+                    </Link>
+                    <Link
+                      href="/auth"
+                      className="btn-ghost w-full justify-center px-8 py-3.5 text-base sm:w-auto"
+                    >
+                      Регистрация
+                    </Link>
+                  </div>
+                  <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white/50 p-4 backdrop-blur">
+                    <InstallAppButton variant="secondary" layout="stack" showHints={false} />
                   </div>
                 </div>
               </div>

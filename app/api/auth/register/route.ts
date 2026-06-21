@@ -12,6 +12,7 @@ import {
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { jsonWithAuth } from "@/lib/cookies";
 import { handleApiError } from "@/lib/auth-request";
+import { sendMail, buildWelcomeEmailHtml, isSmtpConfigured } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +57,14 @@ export async function POST(request: NextRequest) {
 
     const accessToken = signAccessToken(user.id);
     const refreshToken = signRefreshToken(user.id);
+
+    if (isSmtpConfigured()) {
+      void sendMail({
+        to: user.email,
+        subject: "Добро пожаловать в Lot&Go",
+        html: buildWelcomeEmailHtml({ userName: user.name }),
+      }).catch((err) => console.error("Welcome email failed:", err));
+    }
 
     return jsonWithAuth(
       { user: toPublicUser(user), accessToken, refreshToken },

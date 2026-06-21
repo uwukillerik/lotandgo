@@ -35,6 +35,11 @@ export function setupSocket(httpServer: HttpServer): SocketServer {
   });
 
   io.on("connection", (socket) => {
+    const userId = socket.data.userId as string | null;
+    if (userId) {
+      socket.join(`user:${userId}`);
+    }
+
     socket.on("join:auction", (auctionId: string) => {
       socket.join(`auction:${auctionId}`);
     });

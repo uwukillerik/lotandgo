@@ -6,6 +6,7 @@ import { auctions, lots, lotImages, bids, users } from "@/lib/db/schema";
 import { createAuctionSchema } from "@shared/schemas";
 import { getUserId, requireUserId, handleApiError } from "@/lib/auth-request";
 import { getActivePromotionsMap, comparePromotionTier } from "@/lib/promotion-service";
+import { notifyCategorySubscribers } from "@/lib/services/categorySubscriptionService";
 
 const listQuerySchema = z.object({
   search: z.string().optional(),
@@ -201,6 +202,14 @@ export async function POST(request: NextRequest) {
       .update(lots)
       .set({ status: status === "active" ? "active" : "draft" })
       .where(eq(lots.id, lotId));
+
+    if (status === "active") {
+      void notifyCategorySubscribers({
+        category: lot.category,
+        auctionId: auction.id,
+        title: lot.title,
+      });
+    }
 
     return Response.json(
       {

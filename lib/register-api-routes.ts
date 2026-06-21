@@ -46,6 +46,14 @@ import * as adminAuctions from "@/app/api/admin/auctions/route";
 import * as adminAuctionEnd from "@/app/api/admin/auctions/[id]/end/route";
 import * as adminPayments from "@/app/api/admin/payments/route";
 import * as adminEmailSend from "@/app/api/admin/email/send/route";
+import * as adminExport from "@/app/api/admin/export/[type]/route";
+import * as auctionAutoBid from "@/app/api/auctions/[id]/auto-bid/route";
+import * as auctionSuggest from "@/app/api/auctions/suggest/route";
+import * as categorySubscriptions from "@/app/api/category-subscriptions/route";
+import * as reviews from "@/app/api/reviews/route";
+import * as pushSubscribe from "@/app/api/push/subscribe/route";
+import * as favoritesRoute from "@/app/api/favorites/route";
+import * as publicStats from "@/app/api/stats/public/route";
 
 export function registerApiRoutes(app: Express) {
   if (!fs.existsSync(uploadDir)) {
@@ -61,6 +69,12 @@ export function registerApiRoutes(app: Express) {
   api.use(express.json({ limit: "10mb" }));
   api.use(cookieParser());
 
+  api.get("/stats/public", wrapJson(publicStats.GET));
+
+  api.get("/favorites", wrapJson(favoritesRoute.GET));
+  api.post("/favorites", wrapJson(favoritesRoute.POST));
+  api.delete("/favorites", wrapJson(favoritesRoute.DELETE));
+
   api.get("/health", wrapJson(health.GET));
   api.post("/auth/login", wrapJson(authLogin.POST));
   api.post("/auth/register", wrapJson(authRegister.POST));
@@ -70,10 +84,14 @@ export function registerApiRoutes(app: Express) {
   api.patch("/auth/me", wrapJson(authMe.PATCH));
   api.post("/auth/change-password", wrapJson(authChangePassword.POST));
 
+  api.get("/auctions/suggest", wrapJson(auctionSuggest.GET));
   api.get("/auctions", wrapJson(auctions.GET));
   api.post("/auctions", wrapJson(auctions.POST));
   api.get("/auctions/:id", wrapJson(auctionById.GET));
   api.post("/auctions/:id/bids", wrapJson(auctionBids.POST));
+  api.get("/auctions/:id/auto-bid", wrapJson(auctionAutoBid.GET));
+  api.post("/auctions/:id/auto-bid", wrapJson(auctionAutoBid.POST));
+  api.delete("/auctions/:id/auto-bid", wrapJson(auctionAutoBid.DELETE));
   api.get("/auctions/:id/seller-contact", wrapJson(sellerContact.GET));
   api.get("/auctions/:id/messages", wrapJson(auctionMessages.GET));
   api.post("/auctions/:id/messages", wrapJson(auctionMessages.POST));
@@ -112,6 +130,15 @@ export function registerApiRoutes(app: Express) {
   api.get("/admin/email/send", wrapJson(adminEmailSend.GET));
   api.post("/admin/email/send", wrapJson(adminEmailSend.POST));
   api.put("/admin/email/send", wrapJson(adminEmailSend.PUT));
+  api.get("/admin/export/:type", wrapJson(adminExport.GET, { type: ":type" }));
+
+  api.get("/category-subscriptions", wrapJson(categorySubscriptions.GET));
+  api.post("/category-subscriptions", wrapJson(categorySubscriptions.POST));
+  api.get("/reviews", wrapJson(reviews.GET));
+  api.post("/reviews", wrapJson(reviews.POST));
+  api.get("/push/subscribe", wrapJson(pushSubscribe.GET));
+  api.post("/push/subscribe", wrapJson(pushSubscribe.POST));
+  api.delete("/push/subscribe", wrapJson(pushSubscribe.DELETE));
 
   app.use("/api", api);
 }

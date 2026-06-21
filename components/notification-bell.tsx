@@ -17,7 +17,7 @@ export function NotificationBell({ variant = "dark" }: { variant?: "light" | "da
       return (await res.json()).notifications as Array<{ read: boolean }>;
     },
     enabled: !!user,
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
   });
 
   if (!user) return null;

@@ -7,6 +7,7 @@ import { createServer as createViteServer } from "vite";
 import { setupSocket } from "./lib/ws/socket";
 import { startAuctionEngine } from "./lib/services/auctionEngine";
 import { registerApiRoutes } from "./lib/register-api-routes";
+import { registerPublicRoutes } from "./lib/public-routes";
 import { freePorts } from "./lib/kill-port";
 
 const dev = process.env.NODE_ENV !== "production";
@@ -19,6 +20,7 @@ async function start() {
 
   const app = express();
   registerApiRoutes(app);
+  registerPublicRoutes(app);
 
   if (dev) {
     const vite = await createViteServer({

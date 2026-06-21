@@ -33,9 +33,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updates: Partial<{ name: string; phone: string | null }> = {};
+    const updates: Partial<{
+      name: string;
+      phone: string | null;
+      emailNotifications: boolean;
+    }> = {};
     if (parsed.data.name !== undefined) updates.name = parsed.data.name;
     if (parsed.data.phone !== undefined) updates.phone = parsed.data.phone;
+    if (parsed.data.emailNotifications !== undefined) {
+      updates.emailNotifications = parsed.data.emailNotifications;
+    }
 
     if (Object.keys(updates).length === 0) {
       return Response.json({ error: "Нет данных для обновления" }, { status: 400 });

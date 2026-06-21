@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { Users, Package, Gavel, TrendingUp, Wallet, ArrowRight } from "lucide-react";
 import { AdminBadge, AdminCard, AdminPageHeader, AdminStatCard } from "@/components/admin-ui";
 import { AdminEmailPanel } from "@/components/admin-email-panel";
+import { AdminExportPanel } from "@/components/admin-export-panel";
 
 export default function AdminDashboardPage() {
   const { data, isLoading } = useQuery({
@@ -19,7 +20,16 @@ export default function AdminDashboardPage() {
   });
 
   if (isLoading) {
-    return <p className="text-slate-500">Загрузка…</p>;
+    return (
+      <div className="space-y-8">
+        <AdminPageHeader title="Обзор платформы" subtitle="Загрузка статистики…" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!data) {
@@ -68,6 +78,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <AdminEmailPanel />
+      <AdminExportPanel />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminCard className="overflow-hidden p-0">

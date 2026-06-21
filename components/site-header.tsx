@@ -29,28 +29,23 @@ function HeaderLogo({ size = "md" }: { size?: "sm" | "md" }) {
 
 function BrandLink({
   showText = true,
-  showMobileBrand = false,
+  showTagline = false,
+  className,
 }: {
   showText?: boolean;
-  showMobileBrand?: boolean;
+  showTagline?: boolean;
+  className?: string;
 }) {
-  const showBrandBlock = showMobileBrand || showText;
-
   return (
-    <Link href="/" className="group flex min-w-0 items-center gap-2 sm:gap-2.5">
-      <HeaderLogo size={showMobileBrand ? "sm" : "md"} />
-      {showBrandBlock && (
-        <span
-          className={cn(
-            "min-w-0 flex-col",
-            showMobileBrand ? "flex sm:flex" : "hidden sm:flex",
-          )}
-        >
-          <span className="truncate text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 sm:text-xl">
+    <Link href="/" className={cn("group flex min-w-0 shrink-0 items-center gap-2.5", className)}>
+      <HeaderLogo size={showTagline ? "sm" : "md"} />
+      {showText && (
+        <span className="hidden min-w-0 flex-col sm:flex">
+          <span className="truncate text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 lg:text-lg">
             Lot&<span className="text-amber-500">Go</span>
           </span>
-          {showMobileBrand && (
-            <span className="truncate text-[10px] font-semibold leading-tight text-slate-500 sm:text-xs">
+          {showTagline && (
+            <span className="truncate text-[10px] font-semibold leading-tight text-slate-500 lg:text-xs">
               Аукционы в реальном времени
             </span>
           )}
@@ -60,30 +55,21 @@ function BrandLink({
   );
 }
 
-function LiquidGlassHeader({
+function AppHeaderShell({
   children,
   dark = false,
-  stacked = false,
-  innerPage = false,
+  footer,
 }: {
   children: React.ReactNode;
   dark?: boolean;
-  stacked?: boolean;
-  innerPage?: boolean;
+  footer?: React.ReactNode;
 }) {
   return (
     <header className="liquid-glass-header-wrap">
       <div className={cn("liquid-glass-header", dark && "liquid-glass-header-dark")}>
         {!dark && <div className="liquid-glass-header-shine" aria-hidden />}
-        <div
-          className={cn(
-            "liquid-glass-header-inner",
-            stacked && "liquid-glass-header-inner-stacked",
-            innerPage && "liquid-glass-header-inner-page",
-          )}
-        >
-          {children}
-        </div>
+        <div className="liquid-glass-header-inner header-bar-inner">{children}</div>
+        {footer}
       </div>
     </header>
   );
@@ -93,9 +79,9 @@ export function HeaderSellButton() {
   const { user } = useAuth();
   if (!user) return null;
   return (
-    <Link href="/sell" className="header-sell-chip">
+    <Link href="/sell" className="header-sell-chip lg:hidden">
       <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
-      <span className="text-xs font-semibold">Выставить лот</span>
+      <span className="text-xs font-semibold">Выставить</span>
     </Link>
   );
 }
@@ -104,7 +90,7 @@ function SellButton() {
   const { user } = useAuth();
   if (!user) return null;
   return (
-    <Link href="/sell" className="btn-primary hidden !rounded-xl !py-2 !text-sm sm:inline-flex">
+    <Link href="/sell" className="btn-primary hidden !rounded-xl !py-2 !text-sm lg:inline-flex">
       <Plus className="h-4 w-4" />
       Выставить лот
     </Link>
@@ -126,17 +112,19 @@ function AdminLink() {
 
 function HeaderNavLinks({ active }: { active?: "home" | "catalog" | "auth" }) {
   return (
-    <nav className="hidden items-center gap-0.5 sm:flex">
+    <nav className="flex items-center gap-1 rounded-2xl bg-slate-100/80 p-1 ring-1 ring-slate-200/60">
       <Link
         href="/"
         className={active === "home" ? "header-nav-pill-active" : "header-nav-pill-idle"}
       >
+        <Home className="mr-1.5 hidden h-4 w-4 lg:inline" strokeWidth={2.25} />
         Главная
       </Link>
       <Link
         href="/catalog"
         className={active === "catalog" ? "header-nav-pill-active" : "header-nav-pill-idle"}
       >
+        <LayoutGrid className="mr-1.5 hidden h-4 w-4 lg:inline" strokeWidth={2.25} />
         Аукционы
       </Link>
     </nav>
@@ -145,37 +133,18 @@ function HeaderNavLinks({ active }: { active?: "home" | "catalog" | "auth" }) {
 
 function MobileHeaderQuickNav({ active }: { active?: "home" | "catalog" | "auth" }) {
   const { user } = useAuth();
-
   return (
-    <nav className="mobile-header-quick-nav" aria-label="Разделы сайта">
-      <Link
-        href="/"
-        className={cn(
-          "mobile-header-chip",
-          active === "home" && "mobile-header-chip-active",
-        )}
-      >
+    <nav className="mobile-header-quick-nav" aria-label="Разделы">
+      <Link href="/" className={cn("mobile-header-chip", active === "home" && "mobile-header-chip-active")}>
         <Home className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
         Главная
       </Link>
-      <Link
-        href="/catalog"
-        className={cn(
-          "mobile-header-chip",
-          active === "catalog" && "mobile-header-chip-active",
-        )}
-      >
+      <Link href="/catalog" className={cn("mobile-header-chip", active === "catalog" && "mobile-header-chip-active")}>
         <LayoutGrid className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
         Аукционы
       </Link>
       {!user && (
-        <Link
-          href="/auth"
-          className={cn(
-            "mobile-header-chip",
-            active === "auth" && "mobile-header-chip-active",
-          )}
-        >
+        <Link href="/auth" className={cn("mobile-header-chip", active === "auth" && "mobile-header-chip-active")}>
           <LogIn className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
           Войти
         </Link>
@@ -184,53 +153,33 @@ function MobileHeaderQuickNav({ active }: { active?: "home" | "catalog" | "auth"
   );
 }
 
-function DefaultHeaderActions({
-  dark = false,
-  showMobileLogin = false,
-  compactInner = false,
-}: {
-  dark?: boolean;
-  showMobileLogin?: boolean;
-  compactInner?: boolean;
-}) {
+function DefaultHeaderActions({ dark = false }: { dark?: boolean }) {
   const { user } = useAuth();
-  const mobileIconsOnly = compactInner || !showMobileLogin;
-
   return (
-    <div className={cn("header-actions", compactInner && "header-actions-compact")}>
-      {!compactInner && <AdminLink />}
-      {!compactInner && <SellButton />}
+    <div className="header-actions shrink-0">
+      <AdminLink />
+      <SellButton />
+      <HeaderSellButton />
       <NotificationBell variant={dark ? "light" : "dark"} />
       {user ? (
         <>
-          <span className={cn(mobileIconsOnly ? "inline-flex" : showMobileLogin ? "hidden" : "sm:hidden")}>
+          <span className="lg:hidden">
             <HeaderAuthIcon variant={dark ? "light" : "dark"} />
           </span>
-          <span className={cn(mobileIconsOnly ? "hidden" : showMobileLogin ? "inline-flex" : "hidden sm:inline")}>
-            <HeaderAuthButton variant={dark ? "light" : "dark"} showNameOnMobile={showMobileLogin} />
+          <span className="hidden lg:inline">
+            <HeaderAuthButton variant={dark ? "light" : "dark"} />
           </span>
         </>
       ) : (
         <>
-          {!showMobileLogin && !compactInner && (
-            <span className="sm:hidden">
-              <Link
-                href="/auth"
-                aria-label="Войти"
-                className={cn("header-icon-btn", dark && "header-icon-btn-dark")}
-              >
-                <LogIn className="h-[18px] w-[18px]" strokeWidth={2.25} />
-              </Link>
-            </span>
-          )}
           <Link
             href="/auth"
-            className={cn(
-              "header-login-pill",
-              showMobileLogin && "header-login-pill-mobile",
-              compactInner && "hidden",
-            )}
+            aria-label="Войти"
+            className={cn("header-icon-btn lg:hidden", dark && "header-icon-btn-dark")}
           >
+            <LogIn className="h-[18px] w-[18px]" strokeWidth={2.25} />
+          </Link>
+          <Link href="/auth" className="header-login-pill hidden lg:inline-flex">
             <LogIn className="h-4 w-4" />
             Войти
           </Link>
@@ -240,21 +189,49 @@ function DefaultHeaderActions({
   );
 }
 
-/** Главная шапка — landing и публичные страницы */
-export function SiteHeader({ active }: { active?: "home" | "catalog" | "auth" }) {
+function HeaderBackLink({
+  href,
+  label,
+  dark = false,
+}: {
+  href: string;
+  label: string;
+  dark?: boolean;
+}) {
   return (
-    <LiquidGlassHeader stacked>
-      <div className="header-top-row">
-        <BrandLink showMobileBrand />
-        <HeaderNavLinks active={active} />
-        <DefaultHeaderActions showMobileLogin />
-      </div>
-      <MobileHeaderQuickNav active={active} />
-    </LiquidGlassHeader>
+    <Link
+      href={href}
+      className={cn("header-back-btn shrink-0", dark && "header-icon-btn-dark")}
+      aria-label={label}
+    >
+      <ArrowLeft className="h-[18px] w-[18px] shrink-0" strokeWidth={2.25} />
+      <span className="max-w-[7rem] truncate text-sm font-semibold sm:max-w-[10rem]">{label}</span>
+    </Link>
   );
 }
 
-/** Внутренние страницы */
+/** Главная и публичные лендинги */
+export function SiteHeader({ active }: { active?: "home" | "catalog" | "auth" }) {
+  return (
+    <AppHeaderShell
+      footer={
+        <div className="border-t border-slate-200/50 px-2 pb-2 pt-2 sm:hidden">
+          <MobileHeaderQuickNav active={active} />
+        </div>
+      }
+    >
+      <div className="header-bar-row header-bar-row-main">
+        <BrandLink showTagline className="min-w-0 justify-self-start" />
+        <div className="header-bar-nav hidden sm:flex">
+          <HeaderNavLinks active={active} />
+        </div>
+        <DefaultHeaderActions />
+      </div>
+    </AppHeaderShell>
+  );
+}
+
+/** Внутренние страницы — назад + крошки, без дубля навигации */
 export function InnerHeader({
   backHref,
   backLabel,
@@ -267,53 +244,39 @@ export function InnerHeader({
   backLabel: string;
   title?: string;
   subtitle?: string;
-  right?: React.ReactNode;
+  right?: React.ReactNode | null;
   theme?: "light" | "dark";
 }) {
   const isDark = theme === "dark";
 
   return (
-    <LiquidGlassHeader dark={isDark} innerPage>
-      <Link
-        href={backHref}
-        className={cn(
-          "header-back-btn header-back-btn-icon-only",
-          isDark && "header-icon-btn-dark",
-        )}
-        aria-label={backLabel}
-      >
-        <ArrowLeft className="h-[18px] w-[18px] shrink-0" strokeWidth={2.25} />
-      </Link>
-
-      <div className="header-center header-center-page">
-        {title ? (
-          <div className="flex min-w-0 flex-col items-center sm:items-start">
-            <h1 className={cn("header-title", isDark && "header-title-dark")}>
-              {title}
-            </h1>
-            {subtitle && (
-              <p
-                className={cn(
-                  "hidden max-w-[14rem] truncate text-[10px] font-semibold text-slate-500 sm:block",
-                  isDark && "text-slate-400",
+    <AppHeaderShell dark={isDark}>
+      <div className="header-bar-row">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          <HeaderBackLink href={backHref} label={backLabel} dark={isDark} />
+          <span className="hidden h-5 w-px shrink-0 bg-slate-200 sm:block" aria-hidden />
+          <div className="min-w-0 flex-1">
+            {title ? (
+              <>
+                <h1 className={cn("header-page-title truncate", isDark && "text-white")}>
+                  {title}
+                </h1>
+                {subtitle && (
+                  <p className="truncate text-[11px] font-medium text-slate-500 sm:text-xs">
+                    {subtitle}
+                  </p>
                 )}
-              >
-                {subtitle}
-              </p>
+              </>
+            ) : (
+              <BrandLink showText className="!flex sm:!flex" />
             )}
           </div>
-        ) : (
-          <BrandLink showMobileBrand />
-        )}
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {right}
+          <DefaultHeaderActions dark={isDark} />
+        </div>
       </div>
-
-      <div className="header-actions-slot">
-        {right !== undefined ? (
-          <div className="header-actions">{right}</div>
-        ) : (
-          <DefaultHeaderActions dark={isDark} compactInner />
-        )}
-      </div>
-    </LiquidGlassHeader>
+    </AppHeaderShell>
   );
 }

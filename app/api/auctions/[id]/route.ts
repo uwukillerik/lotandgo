@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { auctions, lots, lotImages, bids, users } from "@/lib/db/schema";
+import { auctions, lots, lotImages, bids, users, sellerReviews } from "@/lib/db/schema";
 import { getUserId, handleApiError } from "@/lib/auth-request";
 import { getActivePromotionForLot } from "@/lib/promotion-service";
 import { getChatAccess } from "@/lib/chat-access";
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest, { params }: Params) {
         endsAt: auctions.endsAt,
         sellerId: lots.sellerId,
         sellerName: users.name,
+        sellerAvatarUrl: users.avatarUrl,
         winnerId: auctions.winnerId,
         dealStatus: auctions.dealStatus,
       })
@@ -64,6 +65,26 @@ export async function GET(request: NextRequest, { params }: Params) {
     const chatAccess = userId ? await getChatAccess(auctionId, userId) : null;
     const promotion = await getActivePromotionForLot(row.lotId);
 
+    const [{ endedLots }] = await db
+      .select({ endedLots: sql<number>`count(*)::int` })
+      .from(auctions)
+      .innerJoin(lots, eq(auctions.lotId, lots.id))
+      .where(and(eq(lots.sellerId, row.sellerId), eq(auctions.status, "ended")));
+
+    const [{ avgRating, reviewCount }] = await db
+      .select({
+        avgRating: sql<number>`coalesce(avg(${sellerReviews.rating}), 0)`,
+        reviewCount: sql<number>`count(*)::int`,
+      })
+      .from(sellerReviews)
+      .where(eq(sellerReviews.sellerId, row.sellerId));
+
+    const bidCount = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(bids)
+      .where(eq(bids.auctionId, row.id))
+      .then((r) => r[0]?.count ?? 0);
+
     return Response.json({
       auction: {
         id: row.id,
@@ -75,12 +96,16 @@ export async function GET(request: NextRequest, { params }: Params) {
         startPrice: row.startPrice,
         currentPrice: row.currentPrice,
         bidStep: row.bidStep,
-        bidsCount: bidRows.length,
+        bidsCount: bidCount,
         status: row.status,
         startsAt: row.startsAt.toISOString(),
         endsAt: row.endsAt.toISOString(),
         sellerId: row.sellerId,
         sellerName: row.sellerName,
+        sellerAvatarUrl: row.sellerAvatarUrl,
+        sellerEndedLots: endedLots ?? 0,
+        sellerRating: Number(avgRating),
+        sellerReviewCount: reviewCount ?? 0,
         images: images.map((img) => ({
           id: img.id,
           url: img.url,

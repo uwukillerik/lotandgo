@@ -31,6 +31,15 @@ import { formatPrice, cn } from "@/lib/utils";
 import { PriceDisplay } from "@/components/price-display";
 import { AuctionChat } from "@/components/auction-chat";
 import { AuctionDealPanel } from "@/components/auction-deal-panel";
+import { FavoriteButton } from "@/components/favorite-button";
+import { ErrorState, NotFoundPage } from "@/components/page-states";
+import { PageMeta } from "@/components/page-meta";
+import { AutoBidPanel } from "@/components/auto-bid-panel";
+import { SellerReviews } from "@/components/seller-reviews";
+import { formatLotNumber } from "@shared/auction-helpers";
+import { formatDistanceToNow } from "date-fns";
+import { ru } from "date-fns/locale";
+import Image from "next/image";
 
 function BidPanel({
   minBid,
@@ -168,20 +177,22 @@ export default function AuctionPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [bidAmount, setBidAmount] = useState("");
-  const [error, setError] = useState("");
+  const [bidError, setBidError] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useAuctionSocket(id, user?.id);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["auction", id],
     queryFn: async () => {
       const res = await fetch(`/api/auctions/${id}`, { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error("Не найден");
+      if (res.status === 404) throw new Error("NOT_FOUND");
+      if (!res.ok) throw new Error("LOAD_ERROR");
       return (await res.json()).auction as AuctionDetail;
     },
     refetchInterval: 60_000,
+    retry: (count, err) => err.message !== "NOT_FOUND" && count < 2,
   });
 
   const { data: paymentStatus } = useQuery({
@@ -223,12 +234,12 @@ export default function AuctionPage() {
     },
     onSuccess: () => {
       setBidAmount("");
-      setError("");
+      setBidError("");
       qc.invalidateQueries({ queryKey: ["auction", id] });
       qc.invalidateQueries({ queryKey: ["auctions"] });
       qc.invalidateQueries({ queryKey: ["notifications"] });
     },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: Error) => setBidError(e.message),
   });
 
   useEffect(() => setActiveImage(0), [id]);
@@ -240,14 +251,14 @@ export default function AuctionPage() {
       bids.length === 0 ? data.startPrice : data.currentPrice + data.bidStep;
     const amount = parseInt(bidAmount, 10);
     if (isNaN(amount) || amount < minBid) {
-      setError(`Минимум ${formatPrice(minBid)}`);
+      setBidError(`Минимум ${formatPrice(minBid)}`);
       return;
     }
-    setError("");
+    setBidError("");
     bidMutation.mutate(amount);
   };
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="page-bg min-h-screen">
         <InnerHeader backHref="/catalog" backLabel="Аукционы" title="Загрузка…" right={null} />
@@ -258,6 +269,27 @@ export default function AuctionPage() {
       </div>
     );
   }
+
+  if (isError) {
+    if (error?.message === "NOT_FOUND") {
+      return (
+        <div className="page-bg min-h-screen">
+          <InnerHeader backHref="/catalog" backLabel="Аукционы" title="Лот" right={null} />
+          <NotFoundPage backHref="/catalog" backLabel="В каталог" />
+        </div>
+      );
+    }
+    return (
+      <div className="page-bg min-h-screen">
+        <InnerHeader backHref="/catalog" backLabel="Аукционы" title="Ошибка" right={null} />
+        <div className="page-shell">
+          <ErrorState onRetry={() => refetch()} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
 
   const bids = data.bids ?? [];
   const imagesList = data.images ?? [];
@@ -282,25 +314,32 @@ export default function AuctionPage() {
 
   return (
     <div className="page-bg min-h-screen">
+      <PageMeta
+        title={data.title ?? "Лот"}
+        description={data.description?.slice(0, 160)}
+        image={images[0]?.url ?? data.imageUrl}
+        path={`/auction/${data.id}`}
+      />
       <InnerHeader
         backHref="/catalog"
         backLabel="Аукционы"
         title={
-          (data.title ?? "Лот").length > 28
-            ? `${(data.title ?? "Лот").slice(0, 28)}…`
+          (data.title ?? "Лот").length > 32
+            ? `${(data.title ?? "Лот").slice(0, 32)}…`
             : (data.title ?? "Лот")
         }
-        right={null}
+        subtitle={`${data.category} · #${formatLotNumber(data.id)}`}
+        right={<FavoriteButton auctionId={data.id} size="sm" />}
       />
 
       <main
         className={cn(
-          "page-shell-tight",
+          "auction-detail-main",
           showBidUi && canBid &&
             "!pb-[calc(16rem+env(safe-area-inset-bottom,0px))] lg:!pb-8",
         )}
       >
-        <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+        <div className="auction-detail-grid">
           {/* Галерея */}
           <div className="lg:col-span-2">
             <div
@@ -310,7 +349,7 @@ export default function AuctionPage() {
                 data.promotion?.tier === "featured" && "ring-2 ring-amber-300/70 promo-card-featured",
               )}
             >
-              <div className="relative aspect-[4/3] w-full min-h-[min(72vw,22rem)] overflow-hidden rounded-xl bg-slate-100 sm:min-h-[20rem] lg:min-h-0">
+              <div className="relative aspect-[4/3] w-full min-h-[min(68vw,20rem)] overflow-hidden rounded-xl bg-slate-100 sm:min-h-[18rem] lg:min-h-0">
               <button
                 type="button"
                 onClick={() => images.length > 0 && setLightboxOpen(true)}
@@ -340,6 +379,10 @@ export default function AuctionPage() {
                   </span>
                 )}
                 {data.promotion && <PromotionBadge tier={data.promotion.tier} size="md" />}
+              </div>
+
+              <div className="absolute right-3 top-3 z-20">
+                <FavoriteButton auctionId={data.id} size="sm" />
               </div>
 
               {images.length > 0 && (
@@ -404,15 +447,13 @@ export default function AuctionPage() {
           </div>
 
           {/* Основная информация */}
-          <div className="space-y-4 lg:col-span-3">
-            <div>
-              <p className="auction-lot-no">Лот #{data.id.slice(0, 8)}</p>
+          <div className="auction-detail-sidebar">
+            <div className="lg:hidden">
+              <p className="auction-lot-no">Лот #{formatLotNumber(data.id)}</p>
               <p className="mt-1 text-xs font-bold uppercase tracking-[0.15em] text-amber-600">
                 {data.category}
               </p>
-              <h1 className="display-heading mt-1.5 text-xl sm:text-2xl lg:text-3xl">
-                {data.title}
-              </h1>
+              <h1 className="display-heading mt-1.5 text-xl sm:text-2xl">{data.title}</h1>
             </div>
 
             <div className="price-panel">
@@ -475,6 +516,30 @@ export default function AuctionPage() {
               <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">{data.description}</p>
             </div>
 
+            <div className="surface-card flex items-center gap-3 p-4 sm:p-5">
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-amber-100">
+                {data.sellerAvatarUrl ? (
+                  <Image src={data.sellerAvatarUrl} alt="" fill className="object-cover" unoptimized />
+                ) : (
+                  <span className="flex h-full items-center justify-center text-lg font-bold text-amber-700">
+                    {data.sellerName.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Продавец</p>
+                <p className="truncate font-bold text-slate-900">{data.sellerName}</p>
+                <p className="text-xs text-slate-500">
+                  {(data.sellerEndedLots ?? 0) > 0
+                    ? `${data.sellerEndedLots} завершённых лотов`
+                    : "Новый продавец на платформе"}
+                  {(data.sellerReviewCount ?? 0) > 0 && (
+                    <> · ★ {data.sellerRating?.toFixed(1)} ({data.sellerReviewCount})</>
+                  )}
+                </p>
+              </div>
+            </div>
+
             {needsPayment && (
               <Link href="/profile/payments" className="surface-card flex items-center gap-3 border-amber-200 p-4">
                 <Wallet className="h-6 w-6 shrink-0 text-amber-500" />
@@ -489,17 +554,18 @@ export default function AuctionPage() {
             )}
 
             {canBid && (
-              <div className="hidden lg:block">
+              <div className="hidden lg:block space-y-4">
                 <BidPanel
                   minBid={minBid}
                   bidStep={data.bidStep}
                   bidAmount={bidAmount}
                   setBidAmount={setBidAmount}
                   quickBids={quickBids}
-                  error={error}
+                  error={bidError}
                   isPending={bidMutation.isPending}
                   onBid={handleBid}
                 />
+                <AutoBidPanel auctionId={data.id} minBid={minBid} enabled={canBid} />
               </div>
             )}
 
@@ -588,6 +654,12 @@ export default function AuctionPage() {
                 </Link>
               </>
             )}
+
+            <SellerReviews
+              sellerId={data.sellerId}
+              auctionId={data.id}
+              canReview={Boolean(data.isWinner && data.dealStatus === "completed")}
+            />
           </div>
         </div>
 
@@ -602,27 +674,30 @@ export default function AuctionPage() {
           {bids.length === 0 ? (
             <p className="mt-3 text-sm text-slate-500">Торги открыты — будьте первым участником</p>
           ) : (
-            <ul className="mt-3 max-h-72 space-y-0 overflow-y-auto scrollbar-none">
+            <ul className="mt-3 max-h-80 space-y-0 overflow-y-auto scrollbar-none">
               {bids.map((bid, i) => (
                 <li
                   key={bid.id}
                   className={cn(
-                    "flex items-center justify-between border-b border-slate-100 py-2.5 text-sm last:border-0",
+                    "grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-slate-100 py-2.5 text-sm last:border-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]",
                     bid.userId === user?.id && "rounded-lg bg-amber-50/80 -mx-2 px-2",
                   )}
                 >
-                  <span className="flex items-center gap-2 text-slate-600">
+                  <span className="flex min-w-0 items-center gap-2 text-slate-600">
                     {i === 0 && (
                       <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700">
                         лидер
                       </span>
                     )}
-                    <span className={bid.userId === user?.id ? "font-medium text-amber-800" : ""}>
+                    <span className={cn("truncate", bid.userId === user?.id && "font-medium text-amber-800")}>
                       {bid.userName}
                       {bid.userId === user?.id && " (вы)"}
                     </span>
                   </span>
-                  <span className="font-semibold tabular-nums text-slate-900">
+                  <span className="hidden text-xs text-slate-400 sm:block">
+                    {formatDistanceToNow(new Date(bid.createdAt), { addSuffix: true, locale: ru })}
+                  </span>
+                  <span className="font-semibold tabular-nums text-slate-900 sm:text-right">
                     {formatPrice(bid.amount)}
                   </span>
                 </li>
@@ -640,7 +715,7 @@ export default function AuctionPage() {
           bidAmount={bidAmount}
           setBidAmount={setBidAmount}
           quickBids={quickBids.slice(0, 2)}
-          error={error}
+          error={bidError}
           isPending={bidMutation.isPending}
           onBid={handleBid}
           currentPrice={data.currentPrice}

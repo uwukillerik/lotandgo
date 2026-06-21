@@ -59,7 +59,17 @@ export function handleApiError(error: unknown): Response {
     if (error.message.includes("Допустимы только")) {
       return Response.json({ error: error.message }, { status: 400 });
     }
-    return Response.json({ error: error.message }, { status: 400 });
+    if (
+      error.message.includes("SMTP не настроен") ||
+      error.message.includes("Invalid login") ||
+      error.message.includes("ECONNREFUSED") ||
+      error.message.includes("ETIMEDOUT") ||
+      error.message.includes("ESOCKET") ||
+      error.message.includes("certificate")
+    ) {
+      return Response.json({ error: error.message }, { status: 502 });
+    }
+    return Response.json({ error: error.message }, { status: 500 });
   }
   return Response.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
 }

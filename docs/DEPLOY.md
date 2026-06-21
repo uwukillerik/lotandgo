@@ -308,7 +308,26 @@ File → Open → `android-app` → Build → Build APK(s).
 
 ## Часть 11. PWA
 
-Собирается автоматически при `pnpm build`. На главной — **«Установить приложение»** (Chrome/Edge на телефоне).
+Собирается автоматически при `pnpm build` (`vite-plugin-pwa`).
+
+### Иконки
+
+- Файлы: `public/icons/icon-192.png`, `public/icons/icon-512.png` (не использовать тяжёлый `logo.png` в manifest — ломает precache).
+- После смены иконок: `pnpm build` и проверка `dist/spa/sw.js`.
+
+### Проверка после деплоя
+
+1. Откройте сайт по **HTTPS** (для установки PWA обязателен HTTPS или localhost).
+2. DevTools → Application → Manifest — иконки 192/512 без ошибок.
+3. Service Worker зарегистрирован (`injectRegister: inline`).
+4. На главной, в каталоге и профиле — баннер «Установить Lot&Go».
+
+### Offline
+
+- Shell и статика кэшируются через Workbox.
+- Запросы `/api/*` — `NetworkFirst` с коротким кэшем; при отсутствии сети показывается последний кэш или ошибка загрузки в UI.
+
+На главной и в профиле — кнопка **«Установить приложение»** (Chrome/Edge на телефоне). На iOS: «Поделиться» → «На экран Домой».
 
 ---
 

@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Search,
   SlidersHorizontal,
   X,
+  Check,
   Check,
   Tag,
   ArrowUpDown,
@@ -21,6 +21,7 @@ import {
   type CatalogFilters,
 } from "@shared/catalog-filters";
 import { cn } from "@/lib/utils";
+import { SearchWithSuggestions } from "@/components/search-suggestions";
 
 function FilterSection({
   icon: Icon,
@@ -280,16 +281,10 @@ export function CatalogFiltersPanel({
     <>
       <div className="surface-card mb-5 p-3 sm:p-4">
         <div className="flex gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="search"
-              placeholder="Поиск по названию…"
-              value={filters.search}
-              onChange={(e) => onChange({ ...filters, search: e.target.value })}
-              className="input-field pl-11"
-            />
-          </div>
+          <SearchWithSuggestions
+            value={filters.search}
+            onChange={(search) => onChange({ ...filters, search })}
+          />
           <button
             type="button"
             onClick={openModal}

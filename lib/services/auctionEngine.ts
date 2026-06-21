@@ -1,8 +1,10 @@
-import { eq, and, lte, desc, sql } from "drizzle-orm";
+import { eq, and, lte, desc, asc, sql } from "drizzle-orm";
 import { db } from "../db";
 import { auctions, lots, bids, users } from "../db/schema";
 import { createNotification, createNotifications } from "./notificationService";
 import { isPaymentRequired, getPaymentProvider } from "../payments";
+import { shouldExtendAuction, extendedEndsAt } from "@shared/auction-helpers";
+import { notifyCategorySubscribers } from "./categorySubscriptionService";
 
 const LOCAL_METHOD_ID = "local:test";
 import type { Server as SocketServer } from "socket.io";
@@ -35,7 +37,7 @@ export async function processAuctionLifecycle(): Promise<void> {
       .where(eq(lots.id, auction.lotId));
 
     const [lot] = await db
-      .select({ title: lots.title, sellerId: lots.sellerId })
+      .select({ title: lots.title, sellerId: lots.sellerId, category: lots.category })
       .from(lots)
       .where(eq(lots.id, auction.lotId));
 
@@ -46,6 +48,11 @@ export async function processAuctionLifecycle(): Promise<void> {
         "auction_start",
         `Торги начались: «${lot.title}»`,
       );
+      void notifyCategorySubscribers({
+        category: lot.category,
+        auctionId: auction.id,
+        title: lot.title,
+      });
     }
 
     io?.to(`auction:${auction.id}`).emit("auction:started", {
@@ -78,7 +85,7 @@ export async function endAuction(auctionId: string): Promise<void> {
     })
     .from(bids)
     .where(eq(bids.auctionId, auctionId))
-    .orderBy(desc(bids.amount))
+    .orderBy(desc(bids.amount), asc(bids.createdAt))
     .limit(1);
 
   const winnerId = topBid[0]?.userId ?? null;
@@ -115,6 +122,7 @@ export async function endAuction(auctionId: string): Promise<void> {
     auctionId: string;
     type: "auction_end" | "won";
     message: string;
+    auctionTitle?: string;
   }> = [
     {
       userId: lot.sellerId,
@@ -132,6 +140,7 @@ export async function endAuction(auctionId: string): Promise<void> {
       auctionId,
       type: "won",
       message: `Вы победили в аукционе «${lot.title}»! Откройте лот — чат с продавцом и оплата.`,
+      auctionTitle: lot.title,
     });
   }
 
@@ -142,11 +151,20 @@ export async function endAuction(auctionId: string): Promise<void> {
         auctionId,
         type: "auction_end",
         message: `Аукцион «${lot.title}» завершён.`,
+        auctionTitle: lot.title,
       });
     }
   }
 
-  await createNotifications(notifItems);
+  await createNotifications(
+    notifItems.map((n) => ({
+      userId: n.userId,
+      auctionId: n.auctionId,
+      type: n.type,
+      message: n.message,
+      auctionTitle: "auctionTitle" in n ? n.auctionTitle : lot.title,
+    })),
+  );
 
   io?.to(`auction:${auctionId}`).emit("auction:ended", {
     auctionId,
@@ -225,8 +243,13 @@ export async function placeBid(
       .select({ userId: bids.userId, amount: bids.amount })
       .from(bids)
       .where(eq(bids.auctionId, auctionId))
-      .orderBy(desc(bids.amount))
+      .orderBy(desc(bids.amount), asc(bids.createdAt))
       .limit(1);
+
+    let newEndsAt = auction.endsAt;
+    if (shouldExtendAuction(auction.endsAt, now)) {
+      newEndsAt = extendedEndsAt(auction.endsAt);
+    }
 
     const [bid] = await tx
       .insert(bids)
@@ -235,7 +258,12 @@ export async function placeBid(
 
     await tx
       .update(auctions)
-      .set({ currentPrice: amount })
+      .set({
+        currentPrice: amount,
+        ...(newEndsAt.getTime() !== auction.endsAt.getTime()
+          ? { endsAt: newEndsAt }
+          : {}),
+      })
       .where(eq(auctions.id, auctionId));
 
     const [user] = await tx
@@ -253,6 +281,7 @@ export async function placeBid(
         auctionId,
         "outbid",
         `Вашу ставку на «${lot.title}» перебили. Новая цена: ${amount} ₽`,
+        { auctionTitle: lot.title, newPrice: amount },
       );
     }
 
@@ -276,9 +305,21 @@ export async function placeBid(
         createdAt: bid.createdAt.toISOString(),
       },
       currentPrice: amount,
+      endsAt:
+        newEndsAt.getTime() !== auction.endsAt.getTime()
+          ? newEndsAt.toISOString()
+          : undefined,
+      extended: newEndsAt.getTime() !== auction.endsAt.getTime(),
     });
 
-    return { bidId: bid.id, newPrice: amount };
+    return {
+      bidId: bid.id,
+      newPrice: amount,
+      endsAt:
+        newEndsAt.getTime() !== auction.endsAt.getTime()
+          ? newEndsAt.toISOString()
+          : undefined,
+    };
   });
 }
 

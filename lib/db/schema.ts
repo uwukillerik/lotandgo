@@ -70,6 +70,7 @@ export const users = pgTable("users", {
   paymentVerifiedAt: timestamp("payment_verified_at", { withTimezone: true }),
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   privacyAcceptedAt: timestamp("privacy_accepted_at", { withTimezone: true }),
+  emailNotifications: boolean("email_notifications").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -208,6 +209,86 @@ export const walletTransactions = pgTable("wallet_transactions", {
   counterpartyUserId: uuid("counterparty_user_id").references(() => users.id, {
     onDelete: "set null",
   }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const autoBids = pgTable(
+  "auto_bids",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    auctionId: uuid("auction_id")
+      .notNull()
+      .references(() => auctions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    maxAmount: integer("max_amount").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    auctionUserUnique: { columns: [t.auctionId, t.userId], isUnique: true },
+  }),
+);
+
+export const sellerReviews = pgTable(
+  "seller_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sellerId: uuid("seller_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reviewerId: uuid("reviewer_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    auctionId: uuid("auction_id")
+      .notNull()
+      .references(() => auctions.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    auctionReviewerUnique: { columns: [t.auctionId, t.reviewerId], isUnique: true },
+  }),
+);
+
+export const categorySubscriptions = pgTable(
+  "category_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    category: varchar("category", { length: 100 }).notNull(),
+    emailNotify: boolean("email_notify").notNull().default(true),
+    pushNotify: boolean("push_notify").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    userCategoryUnique: { columns: [t.userId, t.category], isUnique: true },
+  }),
+);
+
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

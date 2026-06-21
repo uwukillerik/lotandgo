@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./index";
-import { users, lots, lotImages, auctions, bids, lotPromotions } from "./schema";
+import { users, lots, lotImages, auctions, bids, lotPromotions, favorites, notifications, auctionMessages } from "./schema";
 import { ensureDemoLegalConsent } from "./ensure-demo-consent";
 import { testDeposit } from "../wallet-service";
 
@@ -198,6 +198,92 @@ async function seedGalleryLot(
   console.log(`  + [gallery+premium] ${GALLERY_LOT_TITLE}`);
 }
 
+async function seedMarketExtras(
+  sellerId: string,
+  bidderMap: Map<string, string>,
+  now: number,
+) {
+  const chesterTitle = "Кресло Chesterfield, кожа, Англия";
+  const [chesterLot] = await db
+    .select({ id: lots.id })
+    .from(lots)
+    .where(eq(lots.title, chesterTitle))
+    .limit(1);
+
+  if (chesterLot) {
+    const [chesterAuction] = await db
+      .select()
+      .from(auctions)
+      .where(eq(auctions.lotId, chesterLot.id))
+      .limit(1);
+
+    if (chesterAuction && chesterAuction.winnerId) {
+      const [hasDeal] = await db
+        .select({ id: auctionMessages.id })
+        .from(auctionMessages)
+        .where(eq(auctionMessages.auctionId, chesterAuction.id))
+        .limit(1);
+
+      if (!hasDeal) {
+        await db
+          .update(auctions)
+          .set({ dealStatus: "awaiting_payment" })
+          .where(eq(auctions.id, chesterAuction.id));
+
+        await db.insert(auctionMessages).values([
+          {
+            auctionId: chesterAuction.id,
+            senderId: chesterAuction.winnerId,
+            body: "Здравствуйте! Готов оплатить лот. Как удобнее перевести?",
+            createdAt: new Date(now - 2 * 3600_000),
+          },
+          {
+            auctionId: chesterAuction.id,
+            senderId: sellerId,
+            body: "Добрый день! Можно через кошелёк на платформе или переводом.",
+            createdAt: new Date(now - 3600_000),
+          },
+        ]);
+
+        await db.insert(notifications).values([
+          {
+            userId: chesterAuction.winnerId,
+            type: "won",
+            auctionId: chesterAuction.id,
+            message: `Вы победили в торгах «${chesterTitle}»`,
+          },
+          {
+            userId: sellerId,
+            type: "auction_end",
+            auctionId: chesterAuction.id,
+            message: `Аукцион «${chesterTitle}» завершён с победителем`,
+          },
+        ]);
+        console.log("  + чат и уведомления для завершённого лота");
+      }
+    }
+  }
+
+  const bidder1 = bidderMap.get("bidder1@lotgo.ru");
+  const [activeAuction] = await db
+    .select({ id: auctions.id })
+    .from(auctions)
+    .where(eq(auctions.status, "active"))
+    .limit(1);
+
+  if (bidder1 && activeAuction) {
+    const [fav] = await db
+      .select({ id: favorites.id })
+      .from(favorites)
+      .where(and(eq(favorites.userId, bidder1), eq(favorites.auctionId, activeAuction.id)))
+      .limit(1);
+    if (!fav) {
+      await db.insert(favorites).values({ userId: bidder1, auctionId: activeAuction.id });
+      console.log("  + избранное для bidder1");
+    }
+  }
+}
+
 async function seedDemo() {
   console.log("Добавляем демо-аукционы…");
   await ensureDemoLegalConsent();
@@ -305,6 +391,7 @@ async function seedDemo() {
   }
 
   await seedGalleryLot(seller.id, bidderMap, now);
+  await seedMarketExtras(seller.id, bidderMap, now);
 
   try {
     await testDeposit(seller.id, 10_000);

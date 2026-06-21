@@ -46,6 +46,7 @@ export const placeBidSchema = z.object({
 export const updateProfileSchema = z.object({
   name: z.string().min(2, "Имя минимум 2 символа").optional(),
   phone: z.string().min(10, "Укажите телефон").optional().nullable(),
+  emailNotifications: z.boolean().optional(),
 });
 
 export const changePasswordSchema = z

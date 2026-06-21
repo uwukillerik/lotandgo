@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { InnerHeader } from "@/components/site-header";
 import { getAuthHeaders, useAuth } from "@/components/auth-provider";
 import { formatPrice } from "@/lib/utils";
-import { Loader2, MessageCircle, Package } from "lucide-react";
+import { ErrorState, EmptyState } from "@/components/page-states";
+import { Loader2, Package } from "lucide-react";
 
 type Conversation = {
   auctionId: string;
@@ -33,7 +34,7 @@ const DEAL_LABELS: Record<string, string> = {
 export default function MessagesPage() {
   const { user } = useAuth();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["message-conversations"],
     queryFn: async () => {
       const res = await fetch("/api/messages", { headers: getAuthHeaders() });
@@ -68,17 +69,18 @@ export default function MessagesPage() {
           </div>
         )}
 
-        {!isLoading && (!data || data.length === 0) && (
-          <div className="surface-card py-16 text-center">
-            <MessageCircle className="mx-auto h-10 w-10 text-slate-300" />
-            <p className="mt-3 font-semibold text-slate-700">Чатов пока нет</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Они появятся после завершения аукциона с победителем
-            </p>
-            <Link href="/catalog" className="btn-primary mt-4 inline-flex">
-              В каталог
-            </Link>
-          </div>
+        {isError && <ErrorState onRetry={() => refetch()} />}
+
+        {!isLoading && !isError && (!data || data.length === 0) && (
+          <EmptyState
+            title="Чатов пока нет"
+            description="Они появятся после завершения аукциона с победителем"
+            action={
+              <Link href="/catalog" className="btn-primary inline-flex">
+                В каталог
+              </Link>
+            }
+          />
         )}
 
         <ul className="space-y-2">
