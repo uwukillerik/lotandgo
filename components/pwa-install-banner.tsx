@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Smartphone } from "lucide-react";
-import { InstallAppButton } from "@/components/install-app-button";
+import { X, Smartphone, Download } from "lucide-react";
+import { APK_DOWNLOAD_PATH } from "@shared/site-url";
 import { cn } from "@/lib/utils";
 
 const DISMISS_KEY = "lotgo_pwa_banner_dismissed";
@@ -50,7 +50,10 @@ export function PwaInstallBanner({ className }: { className?: string }) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-          <InstallAppButton variant="secondary" layout="stack" showHints={false} className="!gap-2" />
+          <a href={APK_DOWNLOAD_PATH} download className="btn-apk !py-2.5 !text-sm">
+            <Download className="h-4 w-4" />
+            Скачать APK
+          </a>
         </div>
       </div>
     </div>
