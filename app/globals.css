@@ -783,52 +783,12 @@
 
   /* ── Mobile bid dock ── */
   .bid-dock-wrap {
-    @apply pointer-events-none fixed left-0 right-0 z-40 px-3 lg:hidden;
-    bottom: calc(6.85rem + env(safe-area-inset-bottom, 0px));
+    @apply pointer-events-none fixed left-0 right-0 z-40 border-t border-slate-200/80 bg-white/95 px-3 py-3 shadow-[0_-8px_32px_-8px_rgba(15,23,42,0.12)] backdrop-blur-xl lg:hidden;
+    bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
   }
 
   .bid-dock {
-    @apply pointer-events-auto relative mx-auto max-w-lg overflow-hidden rounded-[1.75rem] p-3.5;
-    background: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.78) 0%,
-      rgba(255, 255, 255, 0.5) 45%,
-      rgba(255, 251, 235, 0.55) 100%
-    );
-    backdrop-filter: blur(40px) saturate(200%) brightness(1.03);
-    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.03);
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    box-shadow:
-      0 0 0 0.5px rgba(255, 255, 255, 0.55) inset,
-      0 2px 0 rgba(255, 255, 255, 0.85) inset,
-      0 20px 44px -14px rgba(15, 23, 42, 0.2),
-      0 8px 20px -8px rgba(251, 191, 36, 0.15);
-  }
-
-  .bid-dock-shine {
-    @apply pointer-events-none absolute inset-x-3 top-0 h-[42%] rounded-t-[1.5rem];
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.85) 0%,
-      rgba(255, 255, 255, 0.1) 70%,
-      transparent 100%
-    );
-  }
-
-  .bid-dock-meta {
-    @apply relative z-[1] grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2;
-  }
-
-  .bid-dock-price-block {
-    @apply min-w-0;
-  }
-
-  .bid-dock-price {
-    @apply font-extrabold tabular-nums tracking-tight text-slate-900;
-  }
-
-  .bid-dock-timer {
-    @apply rounded-2xl border border-amber-100/90 bg-white/65 px-3 py-1.5 text-right shadow-sm backdrop-blur;
+    @apply pointer-events-auto mx-auto max-w-lg;
   }
 
   .bid-quick-chip {
@@ -840,15 +800,15 @@
   }
 
   .bid-input-fused {
-    @apply relative z-[1] flex items-center gap-1 rounded-[1.25rem] border border-white/90 bg-white/80 p-1 shadow-[inset_0_1px_3px_rgba(15,23,42,0.06)];
+    @apply flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5;
   }
 
   .bid-input-field {
-    @apply min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-base font-extrabold tabular-nums text-slate-900 outline-none placeholder:font-semibold placeholder:text-slate-400;
+    @apply min-w-0 flex-1 rounded-lg border-0 bg-white px-3 py-2.5 text-base font-bold tabular-nums text-slate-900 outline-none ring-1 ring-slate-200/80 placeholder:font-medium placeholder:text-slate-400;
   }
 
   .bid-submit-btn {
-    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] bg-gradient-to-br from-amber-500 via-amber-400 to-yellow-500 text-slate-900 shadow-[0_4px_14px_-4px_rgba(251,191,36,0.65)] transition active:scale-[0.94] disabled:opacity-60;
+    @apply flex h-11 min-w-[5.5rem] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-4 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60;
   }
 
   .catalog-hero {

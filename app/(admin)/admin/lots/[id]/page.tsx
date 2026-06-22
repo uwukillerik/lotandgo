@@ -76,13 +76,17 @@ export default function AdminLotDetailPage() {
         headers: getAuthHeaders(),
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) throw new Error("Ошибка");
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? "Не удалось обновить статус");
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-lot", id] });
       qc.invalidateQueries({ queryKey: ["admin-lots"] });
       toast.success("Статус обновлён");
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const remove = useMutation({

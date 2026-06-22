@@ -221,6 +221,29 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       await db.update(lots).set(lotUpdates).where(eq(lots.id, id));
     }
 
+    if (status) {
+      const [auction] = await db
+        .select({ id: auctions.id })
+        .from(auctions)
+        .where(eq(auctions.lotId, id));
+
+      if (auction) {
+        if (status === "active") {
+          await db
+            .update(auctions)
+            .set({ status: "active", dealStatus: "none", winnerId: null })
+            .where(eq(auctions.id, auction.id));
+        } else if (status === "ended" || status === "sold") {
+          await db.update(auctions).set({ status: "ended" }).where(eq(auctions.id, auction.id));
+        } else if (status === "draft") {
+          await db
+            .update(auctions)
+            .set({ status: "scheduled" })
+            .where(eq(auctions.id, auction.id));
+        }
+      }
+    }
+
     if (removeImageIds?.length) {
       for (const imageId of removeImageIds) {
         await db.delete(lotImages).where(eq(lotImages.id, imageId));

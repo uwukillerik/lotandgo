@@ -56,6 +56,16 @@ export function handleApiError(error: unknown): Response {
     return Response.json({ error: error.message }, { status: error.status });
   }
   if (error instanceof Error) {
+    if (
+      error.message.includes("Минимальная ставка") ||
+      error.message.includes("Торги не активны") ||
+      error.message.includes("Время торгов") ||
+      error.message.includes("не может делать ставки") ||
+      error.message.includes("Подтвердите способ оплаты") ||
+      error.message.includes("не найден")
+    ) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
     if (error.message.includes("Допустимы только")) {
       return Response.json({ error: error.message }, { status: 400 });
     }

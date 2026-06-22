@@ -5,6 +5,7 @@ import { createNotification, createNotifications } from "./notificationService";
 import { isPaymentRequired, getPaymentProvider } from "../payments";
 import { shouldExtendAuction, extendedEndsAt } from "@shared/auction-helpers";
 import { notifyCategorySubscribers } from "./categorySubscriptionService";
+import type { NotificationType } from "./notificationService";
 
 const LOCAL_METHOD_ID = "local:test";
 import type { Server as SocketServer } from "socket.io";
@@ -173,12 +174,22 @@ export async function endAuction(auctionId: string): Promise<void> {
   });
 }
 
+type PendingNotification = {
+  userId: string;
+  auctionId: string;
+  type: NotificationType;
+  message: string;
+  emailExtra?: { auctionTitle?: string; newPrice?: number };
+};
+
 export async function placeBid(
   auctionId: string,
   userId: string,
   amount: number,
-): Promise<{ bidId: string; newPrice: number }> {
-  return db.transaction(async (tx) => {
+): Promise<{ bidId: string; newPrice: number; endsAt?: string }> {
+  const pending: PendingNotification[] = [];
+
+  const result = await db.transaction(async (tx) => {
     const [auction] = await tx
       .select()
       .from(auctions)
@@ -276,22 +287,22 @@ export async function placeBid(
       previousTop[0].userId !== userId &&
       previousTop[0].userId !== lot.sellerId
     ) {
-      await createNotification(
-        previousTop[0].userId,
+      pending.push({
+        userId: previousTop[0].userId,
         auctionId,
-        "outbid",
-        `Вашу ставку на «${lot.title}» перебили. Новая цена: ${amount} ₽`,
-        { auctionTitle: lot.title, newPrice: amount },
-      );
+        type: "outbid",
+        message: `Вашу ставку на «${lot.title}» перебили. Новая цена: ${amount} ₽`,
+        emailExtra: { auctionTitle: lot.title, newPrice: amount },
+      });
     }
 
     if (lot.sellerId !== userId) {
-      await createNotification(
-        lot.sellerId,
+      pending.push({
+        userId: lot.sellerId,
         auctionId,
-        "auction_start",
-        `Новая ставка на «${lot.title}»: ${amount} ₽ (${user?.name ?? "Участник"})`,
-      );
+        type: "auction_start",
+        message: `Новая ставка на «${lot.title}»: ${amount} ₽ (${user?.name ?? "Участник"})`,
+      });
     }
 
     io?.to(`auction:${auctionId}`).emit("bid:new", {
@@ -319,8 +330,20 @@ export async function placeBid(
         newEndsAt.getTime() !== auction.endsAt.getTime()
           ? newEndsAt.toISOString()
           : undefined,
+      pending,
     };
   });
+
+  for (const n of result.pending) {
+    try {
+      await createNotification(n.userId, n.auctionId, n.type, n.message, n.emailExtra);
+    } catch (err) {
+      console.error("bid notification failed:", err);
+    }
+  }
+
+  const { pending: _p, ...response } = result;
+  return response;
 }
 
 export function startAuctionEngine(): void {

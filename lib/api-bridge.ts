@@ -64,3 +64,14 @@ export function wrapStream(handler: NextHandler, params?: Record<string, string>
     }
   };
 }
+
+/** JSON (уже разобран express.json) или multipart stream */
+export function wrapJsonOrStream(handler: NextHandler, params?: Record<string, string>) {
+  return async (req: Request, res: Response) => {
+    const contentType = String(req.headers["content-type"] ?? "");
+    if (contentType.includes("multipart/form-data")) {
+      return wrapStream(handler, params)(req, res);
+    }
+    return wrapJson(handler, params)(req, res);
+  };
+}

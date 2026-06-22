@@ -107,7 +107,10 @@ function BidPanel({
           {isPending ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <Gavel className="h-5 w-5" strokeWidth={2.25} />
+            <>
+              <Gavel className="h-4 w-4" strokeWidth={2.25} />
+              <span className="hidden xs:inline">Ставка</span>
+            </>
           )}
         </button>
       </div>
@@ -121,34 +124,10 @@ function BidPanel({
     return (
       <div className="bid-dock-wrap">
         <div className="bid-dock">
-          <div className="bid-dock-shine" aria-hidden />
-          <div className="bid-dock-meta">
-            <div className="bid-dock-price-block">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                Текущая цена
-              </p>
-              <PriceDisplay
-                value={currentPrice ?? minBid}
-                amountClassName="text-xl font-extrabold text-slate-900"
-                currencyClassName="text-slate-900"
-              />
-            </div>
-            {endsAt && (
-              <div className="bid-dock-timer shrink-0">
-                <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">
-                  До конца
-                </p>
-                <Countdown
-                  endsAt={endsAt}
-                  className="text-sm font-bold text-slate-800"
-                  urgentClassName="text-sm font-bold text-rose-500 animate-pulse"
-                />
-              </div>
-            )}
-          </div>
-          <div className="relative z-[1] mt-2.5">{chips}</div>
-          {inputBlock}
-          <p className="relative z-[1] mt-2 text-center text-[10px] font-medium text-slate-500">
+          <p className="text-xs font-bold text-slate-800">Ваша ставка</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">{chips}</div>
+          <div className="mt-2.5">{inputBlock}</div>
+          <p className="mt-2 text-center text-[11px] text-slate-500">
             Мин. {formatPrice(minBid)} · шаг {formatPrice(bidStep)}
           </p>
         </div>
@@ -228,8 +207,13 @@ export default function AuctionPage() {
         headers: getAuthHeaders(),
         body: JSON.stringify({ amount }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      let json: { error?: string } = {};
+      try {
+        json = await res.json();
+      } catch {
+        if (!res.ok) throw new Error("Сервер не ответил — попробуйте ещё раз");
+      }
+      if (!res.ok) throw new Error(json.error ?? "Не удалось сделать ставку");
       return json;
     },
     onSuccess: () => {
@@ -336,7 +320,7 @@ export default function AuctionPage() {
         className={cn(
           "auction-detail-main",
           showBidUi && canBid &&
-            "!pb-[calc(16rem+env(safe-area-inset-bottom,0px))] lg:!pb-8",
+            "!pb-[calc(11.5rem+env(safe-area-inset-bottom,0px))] lg:!pb-8",
         )}
       >
         <div className="auction-detail-grid">

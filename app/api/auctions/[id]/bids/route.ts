@@ -26,7 +26,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     const result = await placeBid(auctionId, userId, parsed.data.amount);
-    await processAutoBids(auctionId);
+    try {
+      await processAutoBids(auctionId);
+    } catch (autoErr) {
+      console.error("auto-bid after manual bid:", autoErr);
+    }
     return Response.json(result, { status: 201 });
   } catch (error) {
     return handleApiError(error);
