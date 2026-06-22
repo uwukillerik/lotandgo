@@ -788,7 +788,7 @@
   }
 
   .bid-dock {
-    @apply pointer-events-auto mx-auto max-w-lg overflow-hidden rounded-2xl border border-slate-200/90 bg-white/98 shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.18)] backdrop-blur-xl;
+    @apply pointer-events-auto mx-auto max-w-lg overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.18)] backdrop-blur-xl;
   }
 
   .bid-dock-header {
