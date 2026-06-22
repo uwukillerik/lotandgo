@@ -40,12 +40,12 @@ function BrandLink({
     <Link href="/" className={cn("group flex min-w-0 shrink-0 items-center gap-2.5", className)}>
       <HeaderLogo size={showTagline ? "sm" : "md"} />
       {showText && (
-        <span className="hidden min-w-0 flex-col sm:flex">
-          <span className="truncate text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 lg:text-lg">
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[15px] lg:text-lg">
             Lot&<span className="text-amber-500">Go</span>
           </span>
           {showTagline && (
-            <span className="truncate text-[10px] font-semibold leading-tight text-slate-500 lg:text-xs">
+            <span className="hidden truncate text-[10px] font-semibold leading-tight text-slate-500 min-[380px]:block lg:text-xs">
               Аукционы в реальном времени
             </span>
           )}
@@ -58,18 +58,15 @@ function BrandLink({
 function AppHeaderShell({
   children,
   dark = false,
-  footer,
 }: {
   children: React.ReactNode;
   dark?: boolean;
-  footer?: React.ReactNode;
 }) {
   return (
     <header className="liquid-glass-header-wrap">
       <div className={cn("liquid-glass-header", dark && "liquid-glass-header-dark")}>
         {!dark && <div className="liquid-glass-header-shine" aria-hidden />}
         <div className="liquid-glass-header-inner header-bar-inner">{children}</div>
-        {footer}
       </div>
     </header>
   );
@@ -131,28 +128,6 @@ function HeaderNavLinks({ active }: { active?: "home" | "catalog" | "auth" }) {
   );
 }
 
-function MobileHeaderQuickNav({ active }: { active?: "home" | "catalog" | "auth" }) {
-  const { user } = useAuth();
-  return (
-    <nav className="mobile-header-quick-nav" aria-label="Разделы">
-      <Link href="/" className={cn("mobile-header-chip", active === "home" && "mobile-header-chip-active")}>
-        <Home className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
-        Главная
-      </Link>
-      <Link href="/catalog" className={cn("mobile-header-chip", active === "catalog" && "mobile-header-chip-active")}>
-        <LayoutGrid className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
-        Аукционы
-      </Link>
-      {!user && (
-        <Link href="/auth" className={cn("mobile-header-chip", active === "auth" && "mobile-header-chip-active")}>
-          <LogIn className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
-          Войти
-        </Link>
-      )}
-    </nav>
-  );
-}
-
 function DefaultHeaderActions({ dark = false }: { dark?: boolean }) {
   const { user } = useAuth();
   return (
@@ -160,10 +135,12 @@ function DefaultHeaderActions({ dark = false }: { dark?: boolean }) {
       <AdminLink />
       <SellButton />
       <HeaderSellButton />
-      <NotificationBell variant={dark ? "light" : "dark"} />
+      <span className="max-sm:hidden">
+        <NotificationBell variant={dark ? "light" : "dark"} />
+      </span>
       {user ? (
         <>
-          <span className="lg:hidden">
+          <span className="max-sm:hidden lg:hidden">
             <HeaderAuthIcon variant={dark ? "light" : "dark"} />
           </span>
           <span className="hidden lg:inline">
@@ -175,7 +152,7 @@ function DefaultHeaderActions({ dark = false }: { dark?: boolean }) {
           <Link
             href="/auth"
             aria-label="Войти"
-            className={cn("header-icon-btn lg:hidden", dark && "header-icon-btn-dark")}
+            className={cn("header-icon-btn max-sm:hidden lg:hidden", dark && "header-icon-btn-dark")}
           >
             <LogIn className="h-[18px] w-[18px]" strokeWidth={2.25} />
           </Link>
@@ -210,17 +187,11 @@ function HeaderBackLink({
   );
 }
 
-/** Главная и публичные лендинги */
+/** Главная и публичные лендинги — на телефоне навигация только в нижнем доке */
 export function SiteHeader({ active }: { active?: "home" | "catalog" | "auth" }) {
   return (
-    <AppHeaderShell
-      footer={
-        <div className="border-t border-slate-200/50 px-2 pb-2 pt-2 sm:hidden">
-          <MobileHeaderQuickNav active={active} />
-        </div>
-      }
-    >
-      <div className="header-bar-row header-bar-row-main">
+    <AppHeaderShell>
+      <div className="header-bar-row header-bar-row-main header-bar-row-compact">
         <BrandLink showTagline className="min-w-0 justify-self-start" />
         <div className="header-bar-nav hidden sm:flex">
           <HeaderNavLinks active={active} />
