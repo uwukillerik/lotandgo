@@ -41,7 +41,11 @@ describe("anti-snipe helpers", () => {
     expect(shouldExtendAuction(endsAt, now)).toBe(false);
   });
 
-  it("adds 2 minutes to endsAt", () => {
+  it("does not extend for fixed auction type", () => {
+    const endsAt = new Date("2026-06-21T12:00:00Z");
+    const now = new Date("2026-06-21T11:59:30Z");
+    expect(shouldExtendAuction(endsAt, now, "fixed")).toBe(false);
+  });
     const endsAt = new Date("2026-06-21T12:00:00Z");
     expect(extendedEndsAt(endsAt).toISOString()).toBe("2026-06-21T12:02:00.000Z");
   });

@@ -57,6 +57,12 @@ export const promotionTierEnum = pgEnum("promotion_tier", [
   "premium",
 ]);
 
+export const auctionTypeEnum = pgEnum("auction_type", [
+  "fixed",
+  "anti_snipe",
+  "soft_close",
+]);
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
@@ -111,6 +117,10 @@ export const auctions = pgTable("auctions", {
   status: auctionStatusEnum("status").notNull().default("scheduled"),
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  auctionType: auctionTypeEnum("auction_type").notNull().default("anti_snipe"),
+  holdDurationSeconds: integer("hold_duration_seconds").notNull().default(3600),
+  leadingBidderId: uuid("leading_bidder_id").references(() => users.id),
+  leadingSince: timestamp("leading_since", { withTimezone: true }),
   winnerId: uuid("winner_id").references(() => users.id),
   dealStatus: dealStatusEnum("deal_status").notNull().default("none"),
   createdAt: timestamp("created_at", { withTimezone: true })

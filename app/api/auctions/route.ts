@@ -63,6 +63,9 @@ export async function GET(request: NextRequest) {
         status: auctions.status,
         startsAt: auctions.startsAt,
         endsAt: auctions.endsAt,
+        auctionType: auctions.auctionType,
+        holdDurationSeconds: auctions.holdDurationSeconds,
+        leadingSince: auctions.leadingSince,
         sellerId: lots.sellerId,
         sellerName: users.name,
       })
@@ -106,6 +109,9 @@ export async function GET(request: NextRequest) {
           status: row.status,
           startsAt: row.startsAt.toISOString(),
           endsAt: row.endsAt.toISOString(),
+          auctionType: row.auctionType,
+          holdDurationSeconds: row.holdDurationSeconds,
+          leadingSince: row.leadingSince?.toISOString() ?? null,
           sellerId: row.sellerId,
           sellerName: row.sellerName,
           promotion: promo
@@ -151,7 +157,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { lotId, startPrice, bidStep, startsAt, endsAt } = parsed.data;
+    const { lotId, startPrice, bidStep, startsAt, endsAt, auctionType, holdDurationSeconds } =
+      parsed.data;
 
     if (endsAt <= startsAt) {
       return Response.json(
@@ -195,6 +202,9 @@ export async function POST(request: NextRequest) {
         startsAt,
         endsAt,
         status,
+        auctionType: auctionType ?? "anti_snipe",
+        holdDurationSeconds:
+          auctionType === "soft_close" ? (holdDurationSeconds ?? 3600) : 3600,
       })
       .returning();
 

@@ -61,14 +61,81 @@ export async function processAuctionLifecycle(): Promise<void> {
     });
   }
 
-  const toEnd = await db
+  const activeAuctions = await db
     .select()
     .from(auctions)
-    .where(and(eq(auctions.status, "active"), lte(auctions.endsAt, now)));
+    .where(eq(auctions.status, "active"));
 
-  for (const auction of toEnd) {
-    await endAuction(auction.id);
+  for (const auction of activeAuctions) {
+    if (await shouldEndAuction(auction, now)) {
+      await endAuction(auction.id);
+    }
   }
+}
+
+async function shouldEndAuction(
+  auction: typeof auctions.$inferSelect,
+  now: Date,
+): Promise<boolean> {
+  const type = auction.auctionType ?? "anti_snipe";
+
+  if (type === "soft_close") {
+    if (now < auction.endsAt) return false;
+
+    if (!auction.leadingBidderId) {
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(bids)
+        .where(eq(bids.auctionId, auction.id));
+      return (count ?? 0) === 0;
+    }
+
+    if (!auction.leadingSince) return false;
+    const holdEnd = new Date(
+      auction.leadingSince.getTime() + auction.holdDurationSeconds * 1000,
+    );
+    return now >= holdEnd;
+  }
+
+  return now >= auction.endsAt;
+}
+
+export async function resolveAuctionWinner(auctionId: string): Promise<string | null> {
+  const [auction] = await db
+    .select()
+    .from(auctions)
+    .where(eq(auctions.id, auctionId));
+
+  if (!auction) return null;
+  if (auction.winnerId) return auction.winnerId;
+
+  const topBid = await db
+    .select({
+      userId: bids.userId,
+      amount: bids.amount,
+    })
+    .from(bids)
+    .where(eq(bids.auctionId, auctionId))
+    .orderBy(desc(bids.amount), asc(bids.createdAt))
+    .limit(1);
+
+  const winnerId = topBid[0]?.userId ?? null;
+
+  await db
+    .update(auctions)
+    .set({
+      status: "ended",
+      winnerId,
+      dealStatus: winnerId ? "awaiting_payment" : "none",
+    })
+    .where(eq(auctions.id, auctionId));
+
+  await db
+    .update(lots)
+    .set({ status: winnerId ? "sold" : "ended" })
+    .where(eq(lots.id, auction.lotId));
+
+  return winnerId;
 }
 
 export async function endAuction(auctionId: string): Promise<void> {
@@ -77,7 +144,12 @@ export async function endAuction(auctionId: string): Promise<void> {
     .from(auctions)
     .where(eq(auctions.id, auctionId));
 
-  if (!auction || auction.status === "ended") return;
+  if (!auction) return;
+
+  if (auction.status === "ended") {
+    await resolveAuctionWinner(auctionId);
+    return;
+  }
 
   const topBid = await db
     .select({
@@ -200,8 +272,16 @@ export async function placeBid(
     if (auction.status !== "active") throw new Error("Торги не активны");
 
     const now = new Date();
-    if (now > auction.endsAt) {
+    const auctionType = auction.auctionType ?? "anti_snipe";
+
+    if (auctionType !== "soft_close" && now > auction.endsAt) {
       throw new Error("Время торгов истекло");
+    }
+
+    if (auctionType === "soft_close" && now > auction.endsAt) {
+      if (!auction.leadingBidderId) {
+        throw new Error("Время торгов истекло");
+      }
     }
 
     const [lot] = await tx
@@ -258,9 +338,16 @@ export async function placeBid(
       .limit(1);
 
     let newEndsAt = auction.endsAt;
-    if (shouldExtendAuction(auction.endsAt, now)) {
+    if (shouldExtendAuction(auction.endsAt, now, auctionType)) {
       newEndsAt = extendedEndsAt(auction.endsAt);
     }
+
+    const prevLeaderId = previousTop[0]?.userId ?? null;
+    const leaderChanged = prevLeaderId !== userId;
+    const leadingUpdates =
+      auctionType === "soft_close" && leaderChanged
+        ? { leadingBidderId: userId, leadingSince: now }
+        : {};
 
     const [bid] = await tx
       .insert(bids)
@@ -274,6 +361,7 @@ export async function placeBid(
         ...(newEndsAt.getTime() !== auction.endsAt.getTime()
           ? { endsAt: newEndsAt }
           : {}),
+        ...leadingUpdates,
       })
       .where(eq(auctions.id, auctionId));
 
@@ -321,6 +409,12 @@ export async function placeBid(
           ? newEndsAt.toISOString()
           : undefined,
       extended: newEndsAt.getTime() !== auction.endsAt.getTime(),
+      ...(auctionType === "soft_close" && leaderChanged
+        ? {
+            leadingSince: now.toISOString(),
+            leadingBidderId: userId,
+          }
+        : {}),
     });
 
     return {

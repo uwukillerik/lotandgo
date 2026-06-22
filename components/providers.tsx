@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/auth-provider";
 import { NotificationSocketBridge } from "@/components/notification-socket-bridge";
+import { LiveAuctionsBridge } from "@/components/live-auctions-bridge";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -23,6 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       <AuthProvider>
         <NotificationSocketBridge />
+        <LiveAuctionsBridge />
         {children}
         <Toaster position="top-center" richColors closeButton />
       </AuthProvider>

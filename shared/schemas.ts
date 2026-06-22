@@ -52,6 +52,8 @@ export const createAuctionSchema = z.object({
   bidStep: z.coerce.number().positive("Шаг ставки должен быть > 0"),
   startsAt: z.coerce.date(),
   endsAt: z.coerce.date(),
+  auctionType: z.enum(["fixed", "anti_snipe", "soft_close"]).optional().default("anti_snipe"),
+  holdDurationSeconds: z.coerce.number().int().min(60).max(7 * 24 * 3600).optional(),
 });
 
 export const placeBidSchema = z.object({

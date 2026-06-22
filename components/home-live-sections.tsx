@@ -6,7 +6,7 @@ import { Layers, Clock, Gavel, Users, ArrowRight, Radio } from "lucide-react";
 import { AuctionCard } from "@/components/auction-card";
 import { AuctionImage } from "@/components/auction-image";
 import { AuctionCardSkeleton } from "@/components/skeleton";
-import { Countdown } from "@/components/countdown";
+import { AuctionCountdown } from "@/components/countdown";
 import { HeroLotPreview } from "@/components/hero-lot-preview";
 import { getAuthHeaders } from "@/components/auth-provider";
 import { formatPrice } from "@/lib/utils";
@@ -68,11 +68,13 @@ export function HomeLiveAuctions() {
   const { data: live = [], isLoading } = useQuery({
     queryKey: ["home-live"],
     queryFn: () => fetchAuctions({ status: "active", limit: "8", sort: "bids_desc" }),
+    refetchInterval: 15_000,
   });
 
   const { data: ending = [] } = useQuery({
     queryKey: ["home-ending"],
     queryFn: () => fetchAuctions({ status: "active", limit: "6", sort: "ending_soon" }),
+    refetchInterval: 15_000,
   });
 
   if (!isLoading && live.length === 0 && ending.length === 0) {
@@ -264,13 +266,11 @@ export function HomeHeroFeatured() {
             </div>
             {isLive && (
               <div className="rounded-xl bg-amber-50 px-3 py-2 text-right ring-1 ring-amber-100">
-                <p className="text-[9px] font-semibold uppercase tracking-wide text-amber-600">
-                  До конца
-                </p>
-                <Countdown
-                  endsAt={lot.endsAt}
+                <AuctionCountdown
+                  auction={lot}
                   className="text-sm font-bold text-slate-800"
                   urgentClassName="text-sm font-bold text-rose-500 animate-pulse"
+                  prefixClassName="text-[9px]"
                 />
               </div>
             )}

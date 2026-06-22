@@ -57,6 +57,7 @@ export default function CatalogPage() {
     initialPageParam: 1,
     getNextPageParam: (lastPage, _pages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
+    refetchInterval: deferredFilters.status === "active" ? 15_000 : 30_000,
   });
 
   const auctions = data?.pages.flat() ?? [];

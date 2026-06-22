@@ -21,11 +21,12 @@ import { PromotionBadge } from "@/components/promotion-badge";
 import { InnerHeader } from "@/components/site-header";
 import { AuctionImage } from "@/components/auction-image";
 import { ImageLightbox } from "@/components/image-lightbox";
-import { Countdown } from "@/components/countdown";
+import { AuctionCountdown } from "@/components/countdown";
+import { AuctionTypeBadge } from "@/components/auction-type-badge";
 import { Skeleton } from "@/components/skeleton";
 import { getAuthHeaders, useAuth } from "@/components/auth-provider";
 import { useAuctionSocket } from "@/hooks/use-auction-socket";
-import type { AuctionDetail } from "@shared/api";
+import type { AuctionDetail, Bid } from "@shared/api";
 import type { SellerContact } from "@shared/api";
 import { formatPrice, cn } from "@/lib/utils";
 import { PriceDisplay } from "@/components/price-display";
@@ -52,7 +53,9 @@ function BidPanel({
   onBid,
   variant = "desktop",
   currentPrice,
-  endsAt,
+  latestBid,
+  previousBid,
+  auction,
 }: {
   minBid: number;
   bidStep: number;
@@ -64,11 +67,18 @@ function BidPanel({
   onBid: () => void;
   variant?: "desktop" | "mobile";
   currentPrice?: number;
-  endsAt?: string;
+  latestBid?: Bid;
+  previousBid?: Bid;
+  auction?: Pick<
+    AuctionDetail,
+    "status" | "startsAt" | "endsAt" | "auctionType" | "holdDurationSeconds" | "leadingSince"
+  >;
 }) {
-  const chips = (
+  const mobileChips = quickBids.slice(0, 3);
+
+  const chips = (items: number[]) => (
     <div className={cn("flex flex-wrap gap-1.5", variant === "desktop" && "mt-3")}>
-      {quickBids.map((amount) => {
+      {items.map((amount) => {
         const active = bidAmount === String(amount);
         return (
           <button
@@ -114,7 +124,7 @@ function BidPanel({
           )}
         </button>
       </div>
-      {error && (
+      {error && variant === "desktop" && (
         <p className="mt-2 text-center text-xs font-semibold text-rose-600">{error}</p>
       )}
     </div>
@@ -124,12 +134,55 @@ function BidPanel({
     return (
       <div className="bid-dock-wrap">
         <div className="bid-dock">
-          <p className="text-xs font-bold text-slate-800">Ваша ставка</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">{chips}</div>
-          <div className="mt-2.5">{inputBlock}</div>
-          <p className="mt-2 text-center text-[11px] text-slate-500">
-            Мин. {formatPrice(minBid)} · шаг {formatPrice(bidStep)}
-          </p>
+          <div className="bid-dock-header">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                Текущая цена
+              </p>
+              <p className="text-xl font-extrabold tabular-nums text-amber-600">
+                {formatPrice(currentPrice ?? minBid - bidStep)}
+              </p>
+            </div>
+            {auction && (
+              <div className="bid-dock-countdown">
+                <AuctionCountdown
+                  auction={auction}
+                  className="text-sm text-slate-800"
+                  urgentClassName="text-sm text-rose-600"
+                  prefixClassName="text-[9px]"
+                />
+              </div>
+            )}
+          </div>
+
+          {latestBid && (
+            <div className="bid-dock-leader">
+              <TrendingUp className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+              <span className="truncate">
+                <span className="font-semibold text-slate-900">{latestBid.userName}</span>
+                {" · "}
+                {formatPrice(latestBid.amount)}
+                {previousBid && latestBid.amount > previousBid.amount && (
+                  <span className="text-emerald-600">
+                    {" "}
+                    (+{formatPrice(latestBid.amount - previousBid.amount)})
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+
+          <div className="bid-dock-min">
+            Мин. ставка <span className="font-bold text-slate-900">{formatPrice(minBid)}</span>
+            <span className="text-slate-300"> · </span>
+            шаг {formatPrice(bidStep)}
+          </div>
+
+          <div className="px-3.5">{chips(mobileChips)}</div>
+          {inputBlock}
+          {error && (
+            <p className="mt-1.5 text-center text-xs font-semibold text-rose-600">{error}</p>
+          )}
         </div>
       </div>
     );
@@ -144,7 +197,7 @@ function BidPanel({
       <p className="mt-1 text-xs text-slate-500">
         Минимум {formatPrice(minBid)} · шаг {formatPrice(bidStep)}
       </p>
-      {chips}
+      {chips(quickBids)}
       {inputBlock}
     </div>
   );
@@ -170,7 +223,8 @@ export default function AuctionPage() {
       if (!res.ok) throw new Error("LOAD_ERROR");
       return (await res.json()).auction as AuctionDetail;
     },
-    refetchInterval: 60_000,
+    refetchInterval: (query) =>
+      query.state.data?.status === "active" ? 15_000 : false,
     retry: (count, err) => err.message !== "NOT_FOUND" && count < 2,
   });
 
@@ -288,6 +342,15 @@ export default function AuctionPage() {
   const needsPayment = !!user && showBidUi && paymentStatus?.configured && !paymentOk;
   const isLive = data.status === "active";
   const leadingBid = bids[0];
+  const previousBid = bids[1];
+  const auctionTiming = {
+    status: data.status,
+    startsAt: data.startsAt,
+    endsAt: data.endsAt,
+    auctionType: data.auctionType,
+    holdDurationSeconds: data.holdDurationSeconds,
+    leadingSince: data.leadingSince,
+  };
 
   const images =
     imagesList.length > 0
@@ -320,7 +383,7 @@ export default function AuctionPage() {
         className={cn(
           "auction-detail-main",
           showBidUi && canBid &&
-            "!pb-[calc(11.5rem+env(safe-area-inset-bottom,0px))] lg:!pb-8",
+            "!pb-[calc(16rem+env(safe-area-inset-bottom,0px))] lg:!pb-8",
         )}
       >
         <div className="auction-detail-grid">
@@ -467,11 +530,11 @@ export default function AuctionPage() {
                     </span>
                   )}
                   <div className="rounded-xl border border-amber-100 bg-white/80 px-4 py-2.5 text-right shadow-sm backdrop-blur">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">До конца</p>
-                    <Countdown
-                      endsAt={data.endsAt}
-                      className="text-lg font-bold text-slate-900"
-                      urgentClassName="text-lg font-bold text-rose-500 animate-pulse"
+                    <AuctionCountdown
+                      auction={auctionTiming}
+                      className="text-base font-bold text-slate-900 sm:text-lg"
+                      urgentClassName="text-base font-bold text-rose-500 animate-pulse sm:text-lg"
+                      prefixClassName="text-[10px]"
                     />
                   </div>
                 </div>
@@ -492,6 +555,9 @@ export default function AuctionPage() {
                   <User className="h-3.5 w-3.5 text-slate-600" strokeWidth={2} />
                   <span className="price-panel-meta-value">{data.sellerName}</span>
                 </span>
+                {data.auctionType && (
+                  <AuctionTypeBadge type={data.auctionType} className="!text-[11px]" />
+                )}
               </div>
             </div>
 
@@ -606,7 +672,21 @@ export default function AuctionPage() {
 
             {data.status === "ended" && user && !data.isWinner && !data.isSeller && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                Аукцион завершён. В этот раз победил другой участник.
+                {data.bids?.some((b) => b.userId === user.id) ? (
+                  data.winnerId ? (
+                    <>
+                      Аукцион завершён. Победитель:{" "}
+                      <span className="font-semibold text-slate-900">
+                        {data.winnerName ?? "другой участник"}
+                      </span>
+                      .
+                    </>
+                  ) : (
+                    <>Аукцион завершён — ставок не было или победитель не определён.</>
+                  )
+                ) : (
+                  <>Аукцион завершён.</>
+                )}
               </div>
             )}
 
@@ -698,12 +778,14 @@ export default function AuctionPage() {
           bidStep={data.bidStep}
           bidAmount={bidAmount}
           setBidAmount={setBidAmount}
-          quickBids={quickBids.slice(0, 2)}
+          quickBids={quickBids}
           error={bidError}
           isPending={bidMutation.isPending}
           onBid={handleBid}
           currentPrice={data.currentPrice}
-          endsAt={data.endsAt}
+          latestBid={leadingBid}
+          previousBid={previousBid}
+          auction={auctionTiming}
         />
       )}
     </div>

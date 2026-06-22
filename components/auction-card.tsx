@@ -4,9 +4,10 @@ import Link from "next/link";
 import { AuctionImage } from "@/components/auction-image";
 import { PriceDisplay } from "@/components/price-display";
 import { FavoriteButton } from "@/components/favorite-button";
-import { Gavel, Images } from "lucide-react";
+import { Gavel, Images, TrendingUp } from "lucide-react";
 import type { AuctionListItem } from "@shared/api";
-import { Countdown } from "./countdown";
+import { AuctionCountdown } from "./countdown";
+import { AuctionTypeBadge } from "./auction-type-badge";
 import { cn } from "@/lib/utils";
 import { PromotionBadge, promotionCardClass } from "./promotion-badge";
 
@@ -46,7 +47,7 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/25 via-transparent to-transparent" />
 
         <div className="absolute left-2.5 top-2.5 flex flex-col gap-1.5">
           <span
@@ -60,6 +61,9 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
             )}
             {status.label}
           </span>
+          {auction.auctionType && auction.status !== "ended" && (
+            <AuctionTypeBadge type={auction.auctionType} />
+          )}
           {tier && <PromotionBadge tier={tier} />}
         </div>
 
@@ -88,21 +92,16 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
           {auction.title}
         </h3>
 
-        <div className="mt-auto pt-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Ставка</p>
-          <PriceDisplay
-            value={auction.currentPrice}
-            amountClassName={cn(isPremium ? "text-lg sm:text-xl" : "text-base sm:text-lg")}
-          />
-          <div className="mt-2 space-y-1.5">
-            <div className="w-fit rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
-              <Countdown
-                endsAt={auction.endsAt}
-                className="text-[11px] font-semibold text-slate-600"
-                urgentClassName="text-[11px] font-bold text-rose-500"
+        <div className="mt-auto space-y-2.5 pt-3">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Ставка</p>
+              <PriceDisplay
+                value={auction.currentPrice}
+                amountClassName={cn(isPremium ? "text-lg sm:text-xl" : "text-base sm:text-lg")}
               />
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="shrink-0 text-xs text-slate-500">
               {auction.bidsCount}{" "}
               {auction.bidsCount === 1
                 ? "ставка"
@@ -111,6 +110,17 @@ export function AuctionCard({ auction }: { auction: AuctionListItem }) {
                   : "ставок"}
             </p>
           </div>
+
+          {auction.status !== "ended" && (
+            <div className="rounded-xl border border-slate-100 bg-gradient-to-r from-slate-50 to-amber-50/40 px-2.5 py-2">
+              <AuctionCountdown
+                auction={auction}
+                className="text-sm text-slate-800"
+                urgentClassName="text-sm text-rose-600"
+                prefixClassName="text-[10px]"
+              />
+            </div>
+          )}
         </div>
       </div>
     </Link>

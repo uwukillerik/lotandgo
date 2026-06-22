@@ -1,4 +1,5 @@
 import type { LotCategory } from "./categories";
+import type { AuctionType } from "./auction-types";
 
 export type UserRole = "user" | "admin";
 
@@ -67,6 +68,9 @@ export interface AuctionListItem {
   status: "scheduled" | "active" | "ended";
   startsAt: string;
   endsAt: string;
+  auctionType?: AuctionType;
+  holdDurationSeconds?: number;
+  leadingSince?: string | null;
   sellerId: string;
   sellerName: string;
   promotion?: LotPromotionInfo | null;
@@ -84,6 +88,7 @@ export interface AuctionDetail extends AuctionListItem {
   images: LotImage[];
   bids: Bid[];
   winnerId: string | null;
+  winnerName?: string | null;
   dealStatus: DealStatus;
   isWinner: boolean;
   isSeller: boolean;

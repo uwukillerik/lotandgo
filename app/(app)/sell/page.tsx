@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 import { InnerHeader } from "@/components/site-header";
 import { ImageUploader } from "@/components/sell/image-uploader";
+import { DurationPicker, computeEndsAtFromDuration } from "@/components/duration-picker";
 import { getAuthHeaders, getAuthUploadHeaders, useAuth } from "@/components/auth-provider";
 import { LOT_CATEGORIES } from "@shared/categories";
+import { AUCTION_TYPE_OPTIONS, type AuctionType } from "@shared/auction-types";
 import { cn } from "@/lib/utils";
 
 export default function SellPage() {
@@ -25,6 +27,11 @@ export default function SellPage() {
   const [startPrice, setStartPrice] = useState("");
   const [bidStep, setBidStep] = useState("");
   const [durationHours, setDurationHours] = useState("24");
+  const [durationMinutes, setDurationMinutes] = useState("0");
+  const [durationSeconds, setDurationSeconds] = useState("0");
+  const [auctionType, setAuctionType] = useState<AuctionType>("anti_snipe");
+  const [holdHours, setHoldHours] = useState("1");
+  const [holdMinutes, setHoldMinutes] = useState("0");
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/auth?next=/sell");
@@ -68,7 +75,20 @@ export default function SellPage() {
     setLoading(true);
     try {
       const now = new Date();
-      const endsAt = new Date(now.getTime() + parseInt(durationHours, 10) * 3600000);
+      const endsAt = computeEndsAtFromDuration(
+        now,
+        durationHours,
+        durationMinutes,
+        durationSeconds,
+      );
+      if (endsAt.getTime() <= now.getTime()) {
+        throw new Error("Укажите длительность аукциона");
+      }
+      const holdDurationSeconds =
+        auctionType === "soft_close"
+          ? (parseInt(holdHours, 10) || 0) * 3600 + (parseInt(holdMinutes, 10) || 0) * 60
+          : undefined;
+
       const res = await fetch("/api/auctions", {
         method: "POST",
         headers: getAuthHeaders(),
@@ -78,6 +98,8 @@ export default function SellPage() {
           bidStep: parseInt(bidStep, 10),
           startsAt: now.toISOString(),
           endsAt: endsAt.toISOString(),
+          auctionType,
+          ...(holdDurationSeconds ? { holdDurationSeconds } : {}),
         }),
       });
       const data = await res.json();
@@ -193,16 +215,81 @@ export default function SellPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Длительность (часов)</label>
-              <input
-                type="number"
-                value={durationHours}
-                onChange={(e) => setDurationHours(e.target.value)}
-                className={inputClass}
-                min={1}
-                max={168}
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Длительность торгов
+              </label>
+              <DurationPicker
+                hours={durationHours}
+                minutes={durationMinutes}
+                seconds={durationSeconds}
+                onHoursChange={setDurationHours}
+                onMinutesChange={setDurationMinutes}
+                onSecondsChange={setDurationSeconds}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                Завершится:{" "}
+                {computeEndsAtFromDuration(
+                  new Date(),
+                  durationHours,
+                  durationMinutes,
+                  durationSeconds,
+                ).toLocaleString("ru-RU")}
+              </p>
             </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
+                Тип аукциона
+              </label>
+              <div className="space-y-2">
+                {AUCTION_TYPE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAuctionType(opt.value)}
+                    className={cn(
+                      "w-full rounded-xl border p-3 text-left transition",
+                      auctionType === opt.value
+                        ? "border-amber-400 bg-amber-50 ring-2 ring-amber-200"
+                        : "border-slate-200 bg-white hover:border-slate-300",
+                    )}
+                  >
+                    <p className="text-sm font-bold text-slate-900">{opt.label}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{opt.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {auctionType === "soft_close" && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Лидер должен удержаться
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="mb-1 block text-center text-xs text-slate-500">Часы</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={24}
+                      value={holdHours}
+                      onChange={(e) => setHoldHours(e.target.value)}
+                      className="input-field h-12 text-center font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-center text-xs text-slate-500">Минуты</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={holdMinutes}
+                      onChange={(e) => setHoldMinutes(e.target.value)}
+                      className="input-field h-12 text-center font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex gap-3">
               <button type="button" onClick={() => setStep(1)} className="btn-ghost h-12 flex-1">
                 <ArrowLeft className="h-4 w-4" /> Назад

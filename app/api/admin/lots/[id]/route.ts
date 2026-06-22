@@ -14,6 +14,7 @@ import {
 import { LOT_CATEGORIES } from "@shared/categories";
 import { requireAdmin, handleApiError } from "@/lib/auth-request";
 import { kopecksToRubles } from "@/lib/wallet-service";
+import { endAuction } from "@/lib/services/auctionEngine";
 import { saveUploadedFiles } from "@/lib/upload";
 
 const patchFieldsSchema = z.object({
@@ -211,36 +212,39 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       }
     }
 
+    const endingLot = status === "ended" || status === "sold";
     const lotUpdates: Partial<typeof lots.$inferInsert> = {};
-    if (status) lotUpdates.status = status;
+    if (status && !endingLot) lotUpdates.status = status;
     if (title) lotUpdates.title = title;
     if (description) lotUpdates.description = description;
     if (category) lotUpdates.category = category;
 
-    if (Object.keys(lotUpdates).length > 0) {
-      await db.update(lots).set(lotUpdates).where(eq(lots.id, id));
-    }
+    const [auction] = await db
+      .select({ id: auctions.id })
+      .from(auctions)
+      .where(eq(auctions.lotId, id));
 
-    if (status) {
-      const [auction] = await db
-        .select({ id: auctions.id })
-        .from(auctions)
-        .where(eq(auctions.lotId, id));
-
-      if (auction) {
+    if (endingLot && auction) {
+      if (Object.keys(lotUpdates).length > 0) {
+        await db.update(lots).set(lotUpdates).where(eq(lots.id, id));
+      }
+      await endAuction(auction.id);
+    } else {
+      if (status && auction) {
         if (status === "active") {
           await db
             .update(auctions)
             .set({ status: "active", dealStatus: "none", winnerId: null })
             .where(eq(auctions.id, auction.id));
-        } else if (status === "ended" || status === "sold") {
-          await db.update(auctions).set({ status: "ended" }).where(eq(auctions.id, auction.id));
         } else if (status === "draft") {
           await db
             .update(auctions)
             .set({ status: "scheduled" })
             .where(eq(auctions.id, auction.id));
         }
+      }
+      if (Object.keys(lotUpdates).length > 0) {
+        await db.update(lots).set(lotUpdates).where(eq(lots.id, id));
       }
     }
 

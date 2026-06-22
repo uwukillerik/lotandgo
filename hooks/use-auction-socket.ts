@@ -58,6 +58,7 @@ export function useAuctionSocket(auctionId: string | undefined, userId?: string 
           bidsCount: exists ? current.bidsCount : current.bidsCount + 1,
           bids,
           ...(payload.endsAt ? { endsAt: payload.endsAt } : {}),
+          ...(payload.leadingSince ? { leadingSince: payload.leadingSince } : {}),
         };
       });
 
